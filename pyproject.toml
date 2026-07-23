@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "ai-firmware-agent"
+version = "0.1.0"
+description = "AI firmware security analyzer — sixth project of the longyuanai suite"
+authors = ["longyuanai"]
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "ai_firmware_agent", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+shared-llm-core = { path = "../000shared-llm-core", develop = true }
+click = "^8.1.7"
+rich = "^13.7.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.0"
+pytest-mock = "^3.14.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--basetemp=.pytest-tmp"
