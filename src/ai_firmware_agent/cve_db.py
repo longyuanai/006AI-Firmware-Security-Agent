@@ -18,6 +18,7 @@ class CveRecord:
     cve: str
     cvss: float
     summary: str
+    epss: float = 0.0
 
 
 # Format: key is (name_lower, version_prefix). version_prefix matches if the

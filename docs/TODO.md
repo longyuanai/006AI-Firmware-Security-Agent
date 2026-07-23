@@ -11,7 +11,7 @@
 | ID | 任务 | 状态 | 启动日 | 完成日 | 备注 |
 |----|------|------|-------|-------|------|
 | CVE-001 | 接真实 NVD API 替换 mock | done | 2026-07-24 | 2026-07-24 | NVD 2.0 + mock fallback |
-| CVE-002 | 接 EPSS API | pending | | | |
+| CVE-002 | 接 EPSS API | done | 2026-07-24 | 2026-07-24 | FIRST EPSS v1 + 0.0 fallback |
 | CVE-003 | 接 CISA KEV | pending | | | |
 | FW-001 | 真实固件解包 (binwalk + squashfs) | pending | | | |
 | FW-002 | PRisk 加权公式 v0.1 | pending | | | |

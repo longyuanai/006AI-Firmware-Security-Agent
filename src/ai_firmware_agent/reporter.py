@@ -46,19 +46,22 @@ def render_markdown(
     # Full SBOM/CVE table.
     lines.append("## Full Component Inventory")
     lines.append("")
-    lines.append("| Component | Version | Vendor | CVE Count | Worst CVSS | CVEs |")
-    lines.append("|-----------|---------|--------|-----------|------------|------|")
+    lines.append("| Component | Version | Vendor | CVE Count | Worst CVSS | Max EPSS | CVEs |")
+    lines.append("|-----------|---------|--------|-----------|------------|----------|------|")
     for c in components:
         match = next((m for m in matches if m.component is c), None)
         if match and match.cves:
             worst = match.max_cvss
+            max_epss = match.max_epss
             cves = ", ".join(cve.cve for cve in match.cves)
         else:
             worst = 0.0
+            max_epss = 0.0
             cves = "-"
         lines.append(
             f"| {c.name} | {c.version} | {c.vendor or '-'} | "
-            f"{len(match.cves) if match else 0} | {worst:.1f} | {cves} |"
+            f"{len(match.cves) if match else 0} | {worst:.1f} | "
+            f"{max_epss:.4f} | {cves} |"
         )
     lines.append("")
 

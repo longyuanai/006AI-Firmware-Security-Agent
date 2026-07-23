@@ -31,3 +31,4 @@ def test_cli_scan_help_lists_nvd_api_key():
     res = runner.invoke(cli, ["scan", "--help"])
     assert res.exit_code == 0
     assert "--nvd-api-key" in res.output
+    assert "--use-epss" in res.output

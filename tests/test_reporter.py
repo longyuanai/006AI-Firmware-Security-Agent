@@ -40,6 +40,13 @@ def test_render_includes_worst_cvss():
     assert "Worst CVSS in firmware: **9.8**" in md
 
 
+def test_render_includes_max_epss():
+    cs = [_c("a", "1.0")]
+    ms = [_b(cs[0], [CveRecord("CVE-X", 9.8, "x", epss=0.8123)])]
+    md = _r(cs, ms, [])
+    assert "| 0.8123 | CVE-X |" in md
+
+
 def test_render_includes_inventory_table():
     cs = [_c("a", "1.0"), _c("b", "2.0")]
     md = _r(cs, [], [])

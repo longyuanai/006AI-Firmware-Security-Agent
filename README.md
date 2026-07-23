@@ -54,6 +54,9 @@ python -m ai_firmware_agent.cli scan --demo -o report.md
 
 # Optional: higher NVD rate limits
 python -m ai_firmware_agent.cli scan --demo --nvd-api-key "$NVD_API_KEY" -o report.md
+
+# Optional: enrich CVEs with FIRST EPSS exploit probabilities
+python -m ai_firmware_agent.cli scan --demo --use-epss -o report.md
 ```
 
 ## Test

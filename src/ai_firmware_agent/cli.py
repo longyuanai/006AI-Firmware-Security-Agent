@@ -15,7 +15,12 @@ import click
 from rich.console import Console
 
 from ai_firmware_agent import __version__
-from ai_firmware_agent.analyzer import enrich_top_components, match_components
+from ai_firmware_agent.analyzer import (
+    ComponentMatch,
+    enrich_top_components,
+    match_components,
+)
+from ai_firmware_agent.eps import enrich_with_epss
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
@@ -41,6 +46,7 @@ def cli() -> None:
     envvar="NVD_API_KEY",
     help="NVD API key (or set NVD_API_KEY). The value is never written to reports.",
 )
+@click.option("--use-epss", is_flag=True, help="Enrich matched CVEs with FIRST EPSS scores.")
 def scan(
     input_path: str | None,
     output_path: str,
@@ -48,6 +54,7 @@ def scan(
     provider: str,
     demo: bool,
     nvd_api_key: str | None,
+    use_epss: bool,
 ) -> None:
     """Scan a firmware file (or demo) and emit a Markdown report."""
     from shared_llm_core.router import LLMRouter
@@ -88,6 +95,22 @@ def scan(
     console.print("[bold]Matching[/bold] NVD CVE database ...")
     matches = match_components(parsed, lookup_fn=partial(nvd_lookup, api_key=nvd_api_key))
     console.print(f"  [green]{len(matches)}[/green] vulnerable components")
+
+    if use_epss and matches:
+        console.print("[bold]Enriching[/bold] CVEs with FIRST EPSS ...")
+        enriched = {
+            record.cve: record
+            for record in enrich_with_epss(
+                record for match in matches for record in match.cves
+            )
+        }
+        matches = [
+            ComponentMatch(
+                component=match.component,
+                cves=[enriched.get(record.cve, record) for record in match.cves],
+            )
+            for match in matches
+        ]
 
     console.print(f"[bold]Enriching top {top_n}[/bold] via shared-llm-core ...")
     with LLMRouter.from_env() as router:

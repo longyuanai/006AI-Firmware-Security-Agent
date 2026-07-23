@@ -28,6 +28,10 @@ class ComponentMatch:
     def max_cvss(self) -> float:
         return max((c.cvss for c in self.cves), default=0.0)
 
+    @property
+    def max_epss(self) -> float:
+        return max((c.epss for c in self.cves), default=0.0)
+
 
 @dataclass(frozen=True)
 class ComponentNarrative:
@@ -38,7 +42,10 @@ class ComponentNarrative:
     raw_response: dict[str, Any]
 
     def to_markdown(self) -> str:
-        cves_md = ", ".join(f"`{c.cve}` ({c.cvss:.1f})" for c in self.match.cves)
+        cves_md = ", ".join(
+            f"`{c.cve}` (CVSS {c.cvss:.1f}, EPSS {c.epss:.4f})"
+            for c in self.match.cves
+        )
         return (
             f"### {self.match.component.name} {self.match.component.version}"
             f"  \n_vendor: {self.match.component.vendor or 'unknown'}_  \n"
@@ -120,7 +127,15 @@ def enrich_top_components(
     for m in ordered[:top_n]:
         blob = {
             "component": m.component.to_prompt_dict(),
-            "cves": [{"cve": c.cve, "cvss": c.cvss, "summary": c.summary} for c in m.cves],
+            "cves": [
+                {
+                    "cve": c.cve,
+                    "cvss": c.cvss,
+                    "epss": c.epss,
+                    "summary": c.summary,
+                }
+                for c in m.cves
+            ],
         }
         req = ChatRequest(
             messages=[
