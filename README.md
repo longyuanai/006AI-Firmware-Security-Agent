@@ -120,6 +120,23 @@ Set `NVD_API_KEY` in the shell when higher NVD rate limits are needed. The
 container runs as UID `10001`, mounts sample firmware read-only, and keeps
 reports in `./output`.
 
+## CI
+
+`.github/workflows/ci.yml` runs Ruff, mypy, and pytest on both
+`ubuntu-latest` and `windows-latest` with Python 3.11. The workflow checks out
+`000shared-llm-core` from the same GitHub owner as a sibling directory, matching
+the local Poetry path dependency. If that repository is private, grant the
+workflow read access by defining a `SHARED_CORE_TOKEN` repository secret with
+read-only contents permission for `000shared-llm-core`.
+
+Run the same quality gates locally:
+
+```bash
+poetry run ruff check src tests
+poetry run mypy
+poetry run pytest --basetemp=.pytest-tmp
+```
+
 ## Test
 
 ```bash
