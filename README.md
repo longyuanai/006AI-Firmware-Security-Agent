@@ -6,8 +6,8 @@
 ## What it does (PoC)
 
 Parses a synthetic firmware (`.tar.gz` with `manifest.yml`), builds a
-component inventory (SBOM), looks each component up against a built-in mock
-CVE database, and asks the LLM (via `shared-llm-core`) to write a
+component inventory (SBOM), looks each component up against NVD with a
+deterministic local fallback, and asks the LLM (via `shared-llm-core`) to write a
 business-language risk narrative per vulnerable component.
 
 ```
@@ -33,10 +33,9 @@ firmware.tar.gz ──► Parser ──► Component[*] ──► CVE DB lookup
   is out of scope for PoC; the parser interface is designed so a real
   Binwalk-backed parser can replace `_manifest_to_components()` without
   touching anything else.
-- **CVE database** is a hard-coded `mock_lookup()` covering 7 known
+- **CVE fallback** is a hard-coded `mock_lookup()` covering 7 known
   packages (busybox, openssl, openssh, xz, lighttpd, dropbear, kernel).
-  Real-world NVD / EPSS / KEV integration is wired in via the same
-  `Component → list[CveRecord]` signature.
+  NVD failures use this local data so scans remain available offline.
 
 ## Install
 
@@ -52,6 +51,9 @@ poetry install
 docker compose -f ../000shared-llm-core/docker-compose.yml up -d vllm
 export LLM_PROVIDERS=local
 python -m ai_firmware_agent.cli scan --demo -o report.md
+
+# Optional: higher NVD rate limits
+python -m ai_firmware_agent.cli scan --demo --nvd-api-key "$NVD_API_KEY" -o report.md
 ```
 
 ## Test

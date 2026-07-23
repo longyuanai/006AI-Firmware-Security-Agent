@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -81,9 +82,17 @@ def _strip(text: str) -> str:
     return text
 
 
-def match_components(components: list[Component]) -> list[ComponentMatch]:
-    """Look up each component against the mock CVE database."""
-    return [ComponentMatch(c, mock_lookup(c)) for c in components if mock_lookup(c)]
+def match_components(
+    components: list[Component],
+    lookup_fn: Callable[[Component], list[CveRecord]] = mock_lookup,
+) -> list[ComponentMatch]:
+    """Look up components with the selected CVE provider."""
+    matches: list[ComponentMatch] = []
+    for component in components:
+        cves = lookup_fn(component)
+        if cves:
+            matches.append(ComponentMatch(component, cves))
+    return matches
 
 
 def _parse(match: ComponentMatch, resp: ChatResponse) -> ComponentNarrative:

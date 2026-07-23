@@ -45,6 +45,19 @@ def test_match_max_cvss_correct():
     assert matches[0].max_cvss >= 5.0
 
 
+def test_match_accepts_injected_lookup():
+    component = Component(name="custom", version="1.0")
+    calls = []
+
+    def lookup(candidate):
+        calls.append(candidate)
+        return [CveRecord("CVE-TEST-1", 4.2, "stub")]
+
+    matches = match_components([component], lookup_fn=lookup)
+    assert calls == [component]
+    assert matches[0].cves[0].cve == "CVE-TEST-1"
+
+
 def test_enrich_orders_by_max_cvss():
     comps = [
         Component(name="xz", version="5.6.0"),       # 10.0

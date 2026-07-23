@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+from functools import partial
 
 import click
 from rich.console import Console
@@ -16,6 +17,7 @@ from rich.console import Console
 from ai_firmware_agent import __version__
 from ai_firmware_agent.analyzer import enrich_top_components, match_components
 from ai_firmware_agent.normalizer import Component
+from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
 from ai_firmware_agent.reporter import render_markdown
 
@@ -34,7 +36,19 @@ def cli() -> None:
 @click.option("--top-n", default=3, show_default=True, type=int)
 @click.option("--provider", "-p", default="local", show_default=True)
 @click.option("--demo", is_flag=True, help="Use a built-in synthetic firmware instead of --input.")
-def scan(input_path: str | None, output_path: str, top_n: int, provider: str, demo: bool) -> None:
+@click.option(
+    "--nvd-api-key",
+    envvar="NVD_API_KEY",
+    help="NVD API key (or set NVD_API_KEY). The value is never written to reports.",
+)
+def scan(
+    input_path: str | None,
+    output_path: str,
+    top_n: int,
+    provider: str,
+    demo: bool,
+    nvd_api_key: str | None,
+) -> None:
     """Scan a firmware file (or demo) and emit a Markdown report."""
     from shared_llm_core.router import LLMRouter
 
@@ -71,8 +85,8 @@ def scan(input_path: str | None, output_path: str, top_n: int, provider: str, de
         console.print("[yellow]No components parsed; nothing to do.[/yellow]")
         return
 
-    console.print("[bold]Matching[/bold] CVE database ...")
-    matches = match_components(parsed)
+    console.print("[bold]Matching[/bold] NVD CVE database ...")
+    matches = match_components(parsed, lookup_fn=partial(nvd_lookup, api_key=nvd_api_key))
     console.print(f"  [green]{len(matches)}[/green] vulnerable components")
 
     console.print(f"[bold]Enriching top {top_n}[/bold] via shared-llm-core ...")
