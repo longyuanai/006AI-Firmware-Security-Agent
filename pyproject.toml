@@ -13,6 +13,7 @@ shared-llm-core = { path = "../000shared-llm-core", develop = true }
 click = "^8.1.7"
 rich = "^13.7.1"
 httpx = "^0.28.1"
+matplotlib = "^3.10.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.0"

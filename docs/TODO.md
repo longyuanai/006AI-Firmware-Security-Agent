@@ -15,7 +15,7 @@
 | CVE-003 | 接 CISA KEV | done | 2026-07-24 | 2026-07-24 | CISA JSON feed + false fallback |
 | FW-001 | 真实固件解包 (binwalk + squashfs) | done | 2026-07-24 | 2026-07-24 | 真实 SquashFS demo + Windows-safe runner |
 | FW-002 | PRisk 加权公式 v0.1 | done | 2026-07-24 | 2026-07-24 | 归一化 0-1 + analyzer 排序 |
-| RPT-001 | Markdown 报告加图表 (matplotlib PNG) | pending | | | |
+| RPT-001 | Markdown 报告加图表 (matplotlib PNG) | done | 2026-07-24 | 2026-07-24 | Agg 饼图 + Markdown 相对路径 |
 | DOCKER-001 | Dockerfile + docker-compose.yml | pending | | | |
 | CI-001 | GitHub Actions: lint + pytest + type check | pending | | | |
 

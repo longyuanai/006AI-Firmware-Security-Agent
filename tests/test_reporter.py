@@ -63,6 +63,14 @@ def test_render_includes_prisk_summary_and_column():
     assert "| 1.000 | 10.0 |" in md
 
 
+def test_render_embeds_vulnerability_chart():
+    from ai_firmware_agent.reporter import render_markdown
+
+    md = render_markdown([], [], [], chart_path="report-vulnerability-distribution.png")
+    assert "## Vulnerability Distribution" in md
+    assert "![Vulnerability distribution](report-vulnerability-distribution.png)" in md
+
+
 def test_render_includes_inventory_table():
     cs = [_c("a", "1.0"), _c("b", "2.0")]
     md = _r(cs, [], [])

@@ -108,6 +108,9 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path):
     assert res.exit_code == 0, res.output
     assert calls == {"epss": 1, "kev": 1}
     report = report_path.read_text(encoding="utf-8")
+    chart_path = tmp_path / "report-vulnerability-distribution.png"
+    assert chart_path.read_bytes().startswith(b"\x89PNG")
     assert "CISA KEV-listed CVEs: **1**" in report
     assert "Highest PRisk: **" in report
+    assert "![Vulnerability distribution](report-vulnerability-distribution.png)" in report
     assert "| 0.9000 | yes | CVE-2024-3094 |" in report

@@ -87,6 +87,12 @@ All inputs are clamped to `0..1`. `Component.extra.exploit` and
 known-exploitation evidence and a documented component-category mapping supplies
 the exposure estimate.
 
+## Report chart
+
+When `--output report.md` is used, the CLI also writes
+`report-vulnerability-distribution.png` using Matplotlib's headless Agg
+renderer. The Markdown report links the image with a portable relative path.
+
 ## Test
 
 ```bash

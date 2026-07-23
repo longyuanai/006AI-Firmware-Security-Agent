@@ -7,6 +7,7 @@ build/
 venv/
 .test-deps/
 .uv-cache/
+.mplconfig/
 .env
 .pytest_cache/
 .pytest-tmp*/

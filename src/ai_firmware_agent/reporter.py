@@ -13,6 +13,7 @@ def render_markdown(
     narratives: list[ComponentNarrative],
     *,
     source_path: str = "",
+    chart_path: str = "",
 ) -> str:
     """Render the firmware analysis Markdown report."""
     lines: list[str] = []
@@ -35,6 +36,12 @@ def render_markdown(
         lines.append(f"- CISA KEV-listed CVEs: **{kev_count}**")
         lines.append(f"- Highest PRisk: **{max(match.prisk for match in matches):.3f}**")
     lines.append("")
+
+    if chart_path:
+        lines.append("## Vulnerability Distribution")
+        lines.append("")
+        lines.append(f"![Vulnerability distribution]({chart_path})")
+        lines.append("")
 
     # Top-N LLM-enriched.
     lines.append("## Top Risks (LLM-enriched)")

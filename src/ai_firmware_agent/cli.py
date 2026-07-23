@@ -24,6 +24,7 @@ from ai_firmware_agent.analyzer import (
     score_and_rank_matches,
 )
 from ai_firmware_agent.eps import enrich_with_epss
+from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.kev import enrich_with_kev
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
@@ -150,7 +151,24 @@ def scan(
     with LLMRouter.from_env() as router:
         narratives = enrich_top_components(matches, router, top_n=top_n)
 
-    report = render_markdown(parsed, matches, narratives, source_path=source)
+    chart_reference = ""
+    if output_path != "-":
+        report_path = Path(output_path)
+        chart_path = report_path.with_name(
+            f"{report_path.stem}-vulnerability-distribution.png"
+        )
+        rendered_chart = render_vulnerability_pie(matches, chart_path)
+        if rendered_chart is not None:
+            chart_reference = rendered_chart.name
+            console.print(f"[green]Wrote[/green] {rendered_chart}")
+
+    report = render_markdown(
+        parsed,
+        matches,
+        narratives,
+        source_path=source,
+        chart_path=chart_reference,
+    )
     if output_path == "-":
         sys.stdout.write(report)
     else:

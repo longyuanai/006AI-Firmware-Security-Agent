@@ -7,6 +7,7 @@ business-language risk narrative.
 """
 
 from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
+from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.eps import epss_lookup
 from ai_firmware_agent.kev import kev_lookup
@@ -33,6 +34,7 @@ __all__ = [
     "parse_firmware",
     "render_markdown",
     "rank_matches",
+    "render_vulnerability_pie",
     "score_component",
     "unpack_firmware",
     "__version__",
