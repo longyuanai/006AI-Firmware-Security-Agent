@@ -167,3 +167,16 @@ versions are excluded; adjacent release lines become review candidates with a
 bounded confidence, analogue CVEs, weakness signals, and an explanatory v0.5
 §9 Finding. These results are hypotheses for manual analysis, not claims that
 a new vulnerability or exploit exists.
+
+## Multi-agent attack chain
+
+`reconstruct_attack_chain(findings, orchestrator)` sends one defensive mission
+to the v0.5 §7 roles `SCOUT`, `EXPLOITER`, and `REVIEWER`. It returns a
+background/attack/consequences narrative and a related §9 Finding. The
+EXPLOITER role is instructed to simulate the logical path only; it does not
+execute firmware commands or produce deployable exploit code.
+
+`reconstruct_attack_chain_with_router(...)` constructs the official
+`shared_llm_core.MultiAgentOrchestrator`. Until the sibling shared core is
+upgraded from 0.1 to 0.5, use the injected-orchestrator form for tests and
+offline integration.

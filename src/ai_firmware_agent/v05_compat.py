@@ -15,10 +15,20 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
+import shared_llm_core
+
 if TYPE_CHECKING:
-    from shared_llm_core import Finding, FindingSeverity, FindingSource
+    from shared_llm_core import (
+        AgentResult,
+        AgentRole,
+        Finding,
+        FindingSeverity,
+        FindingSource,
+        MissionContext,
+    )
 
     V05_NATIVE: bool
+    V05_AGENT_NATIVE: bool
 else:
     try:
         from shared_llm_core import Finding, FindingSeverity, FindingSource
@@ -100,6 +110,44 @@ else:
                 return cls(**clean)
 
 
+    try:
+        from shared_llm_core import AgentResult, AgentRole, MissionContext
+
+        V05_AGENT_NATIVE = True
+    except ImportError:
+        V05_AGENT_NATIVE = False
+
+        class AgentRole(str, Enum):  # noqa: UP042
+            """Frozen v0.5 §7.3 role values."""
+
+            SCOUT = "scout"
+            ANALYST = "analyst"
+            EXPLOITER = "exploiter"
+            SYNTHESIZER = "synthesizer"
+            REVIEWER = "reviewer"
+
+
+        @dataclass(frozen=True)
+        class MissionContext:
+            """Frozen v0.5 §7.5 mission schema."""
+
+            task: str
+            inputs: Mapping[str, Any]
+            scratchpad: tuple[str, ...] = ()
+            metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+        @dataclass(frozen=True)
+        class AgentResult:
+            """Frozen v0.5 §7.6 result schema."""
+
+            role: AgentRole
+            output: str
+            findings: tuple[Finding, ...] = ()
+            latency_ms: int = 0
+            error: str | None = None
+
+
 def new_finding(
     *,
     severity: Any,
@@ -134,3 +182,23 @@ def is_uuid4(value: str) -> bool:
     """Return whether ``value`` is a canonical UUID4."""
     parsed = UUID(value)
     return parsed.version == 4 and str(parsed) == value
+
+
+def create_multi_agent_orchestrator(
+    router: Any,
+    *,
+    max_concurrency: int = 4,
+    scratchpad_size: int = 4096,
+) -> Any:
+    """Instantiate the official §7 orchestrator or report the missing layer."""
+    try:
+        orchestrator_type = shared_llm_core.MultiAgentOrchestrator
+    except AttributeError as exc:
+        raise RuntimeError(
+            "shared-llm-core v0.5 MultiAgentOrchestrator is not installed"
+        ) from exc
+    return orchestrator_type(
+        router,
+        max_concurrency=max_concurrency,
+        scratchpad_size=scratchpad_size,
+    )
