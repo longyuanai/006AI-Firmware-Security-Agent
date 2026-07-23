@@ -19,6 +19,7 @@
 | DOCKER-001 | Dockerfile + docker-compose.yml | done | 2026-07-24 | 2026-07-24 | 非 root slim 镜像 167.3 MB |
 | CI-001 | GitHub Actions: lint + pytest + type check | done | 2026-07-24 | 2026-07-24 | Windows/Linux matrix + Ruff + mypy |
 | EMULATE-001-A | Docker 隔离 QEMU user-mode 固件 emulation | done | 2026-07-24 | 2026-07-24 | mipsel/arm + 进程/监听端口 Finding |
+| ZERODAY-001-A | 组件版本 + 已知 CVE 模式 0-day 候选 | done | 2026-07-24 | 2026-07-24 | 相邻 release line + 置信度/理由 Finding |
 
 ---
 

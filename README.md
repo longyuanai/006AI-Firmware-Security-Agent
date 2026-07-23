@@ -158,3 +158,12 @@ docker build -f Dockerfile.emulator -t ai-firmware-emulator:0.5 .
 network, capabilities, root user, or writable root filesystem. The result
 contains observed processes, listening TCP/UDP ports, and a v0.5 §9 firmware
 Finding. Tests inject a Docker runner and never execute QEMU.
+
+## 0-day candidate prediction
+
+`predict_zero_days(components, patterns)` compares inventory versions with
+version strings extracted from known CVE evidence. Exact known affected
+versions are excluded; adjacent release lines become review candidates with a
+bounded confidence, analogue CVEs, weakness signals, and an explanatory v0.5
+§9 Finding. These results are hypotheses for manual analysis, not claims that
+a new vulnerability or exploit exists.
