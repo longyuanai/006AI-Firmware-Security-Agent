@@ -10,6 +10,7 @@ from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
 from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.eps import epss_lookup
+from ai_firmware_agent.emulator import EmulationResult, emulate_firmware
 from ai_firmware_agent.kev import kev_lookup
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
@@ -24,9 +25,11 @@ __all__ = [
     "Component",
     "ComponentNarrative",
     "CveRecord",
+    "EmulationResult",
     "FirmwareUnpackError",
     "PRiskScore",
     "enrich_top_components",
+    "emulate_firmware",
     "epss_lookup",
     "kev_lookup",
     "mock_lookup",

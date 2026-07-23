@@ -42,6 +42,9 @@ line-length = 100
 select = ["B", "E", "F", "UP"]
 ignore = ["E501", "E702"]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/conftest.py" = ["UP037"]
+
 [tool.mypy]
 python_version = "3.11"
 files = ["src"]

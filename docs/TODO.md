@@ -18,6 +18,7 @@
 | RPT-001 | Markdown 报告加图表 (matplotlib PNG) | done | 2026-07-24 | 2026-07-24 | Agg 饼图 + Markdown 相对路径 |
 | DOCKER-001 | Dockerfile + docker-compose.yml | done | 2026-07-24 | 2026-07-24 | 非 root slim 镜像 167.3 MB |
 | CI-001 | GitHub Actions: lint + pytest + type check | done | 2026-07-24 | 2026-07-24 | Windows/Linux matrix + Ruff + mypy |
+| EMULATE-001-A | Docker 隔离 QEMU user-mode 固件 emulation | done | 2026-07-24 | 2026-07-24 | mipsel/arm + 进程/监听端口 Finding |
 
 ---
 

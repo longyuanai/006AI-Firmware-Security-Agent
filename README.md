@@ -144,3 +144,17 @@ poetry run pytest -v
 ```
 
 All tests use a stubbed router; no live LLM is required.
+
+## Firmware emulation
+
+Build the isolated QEMU user-mode image:
+
+```bash
+docker build -f Dockerfile.emulator -t ai-firmware-emulator:0.5 .
+```
+
+`emulate_firmware(rootfs, architecture="mipsel")` invokes that image through
+`docker run`. Firmware files are mounted read-only and the container has no
+network, capabilities, root user, or writable root filesystem. The result
+contains observed processes, listening TCP/UDP ports, and a v0.5 §9 firmware
+Finding. Tests inject a Docker runner and never execute QEMU.
