@@ -9,6 +9,7 @@ business-language risk narrative.
 from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.eps import epss_lookup
+from ai_firmware_agent.kev import kev_lookup
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import parse_firmware
@@ -22,6 +23,7 @@ __all__ = [
     "CveRecord",
     "enrich_top_components",
     "epss_lookup",
+    "kev_lookup",
     "mock_lookup",
     "nvd_lookup",
     "parse_firmware",

@@ -57,6 +57,9 @@ python -m ai_firmware_agent.cli scan --demo --nvd-api-key "$NVD_API_KEY" -o repo
 
 # Optional: enrich CVEs with FIRST EPSS exploit probabilities
 python -m ai_firmware_agent.cli scan --demo --use-epss -o report.md
+
+# Optional: mark CVEs in the CISA Known Exploited Vulnerabilities catalog
+python -m ai_firmware_agent.cli scan --demo --use-kev -o report.md
 ```
 
 ## Test

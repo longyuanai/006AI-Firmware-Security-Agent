@@ -9,6 +9,6 @@ venv/
 .uv-cache/
 .env
 .pytest_cache/
-.pytest-tmp/
+.pytest-tmp*/
 *.tar.gz
 !samples/*.tar.gz

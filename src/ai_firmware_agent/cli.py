@@ -21,6 +21,7 @@ from ai_firmware_agent.analyzer import (
     match_components,
 )
 from ai_firmware_agent.eps import enrich_with_epss
+from ai_firmware_agent.kev import enrich_with_kev
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
@@ -47,6 +48,7 @@ def cli() -> None:
     help="NVD API key (or set NVD_API_KEY). The value is never written to reports.",
 )
 @click.option("--use-epss", is_flag=True, help="Enrich matched CVEs with FIRST EPSS scores.")
+@click.option("--use-kev", is_flag=True, help="Mark CVEs found in the CISA KEV catalog.")
 def scan(
     input_path: str | None,
     output_path: str,
@@ -55,6 +57,7 @@ def scan(
     demo: bool,
     nvd_api_key: str | None,
     use_epss: bool,
+    use_kev: bool,
 ) -> None:
     """Scan a firmware file (or demo) and emit a Markdown report."""
     from shared_llm_core.router import LLMRouter
@@ -101,6 +104,22 @@ def scan(
         enriched = {
             record.cve: record
             for record in enrich_with_epss(
+                record for match in matches for record in match.cves
+            )
+        }
+        matches = [
+            ComponentMatch(
+                component=match.component,
+                cves=[enriched.get(record.cve, record) for record in match.cves],
+            )
+            for match in matches
+        ]
+
+    if use_kev and matches:
+        console.print("[bold]Checking[/bold] CISA Known Exploited Vulnerabilities ...")
+        enriched = {
+            record.cve: record
+            for record in enrich_with_kev(
                 record for match in matches for record in match.cves
             )
         }

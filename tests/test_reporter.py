@@ -44,7 +44,15 @@ def test_render_includes_max_epss():
     cs = [_c("a", "1.0")]
     ms = [_b(cs[0], [CveRecord("CVE-X", 9.8, "x", epss=0.8123)])]
     md = _r(cs, ms, [])
-    assert "| 0.8123 | CVE-X |" in md
+    assert "| 0.8123 | no | CVE-X |" in md
+
+
+def test_render_includes_kev_count_and_marker():
+    cs = [_c("a", "1.0")]
+    ms = [_b(cs[0], [CveRecord("CVE-X", 9.8, "x", kev=True)])]
+    md = _r(cs, ms, [])
+    assert "CISA KEV-listed CVEs: **1**" in md
+    assert "| yes | CVE-X |" in md
 
 
 def test_render_includes_inventory_table():

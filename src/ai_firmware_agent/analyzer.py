@@ -32,6 +32,10 @@ class ComponentMatch:
     def max_epss(self) -> float:
         return max((c.epss for c in self.cves), default=0.0)
 
+    @property
+    def has_kev(self) -> bool:
+        return any(c.kev for c in self.cves)
+
 
 @dataclass(frozen=True)
 class ComponentNarrative:
@@ -43,7 +47,8 @@ class ComponentNarrative:
 
     def to_markdown(self) -> str:
         cves_md = ", ".join(
-            f"`{c.cve}` (CVSS {c.cvss:.1f}, EPSS {c.epss:.4f})"
+            f"`{c.cve}` (CVSS {c.cvss:.1f}, EPSS {c.epss:.4f}, "
+            f"KEV {'yes' if c.kev else 'no'})"
             for c in self.match.cves
         )
         return (
@@ -132,6 +137,7 @@ def enrich_top_components(
                     "cve": c.cve,
                     "cvss": c.cvss,
                     "epss": c.epss,
+                    "kev": c.kev,
                     "summary": c.summary,
                 }
                 for c in m.cves

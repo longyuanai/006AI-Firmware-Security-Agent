@@ -31,6 +31,8 @@ def render_markdown(
     if matches:
         max_cvss = max(m.max_cvss for m in matches)
         lines.append(f"- Worst CVSS in firmware: **{max_cvss:.1f}**")
+        kev_count = sum(cve.kev for match in matches for cve in match.cves)
+        lines.append(f"- CISA KEV-listed CVEs: **{kev_count}**")
     lines.append("")
 
     # Top-N LLM-enriched.
@@ -46,22 +48,30 @@ def render_markdown(
     # Full SBOM/CVE table.
     lines.append("## Full Component Inventory")
     lines.append("")
-    lines.append("| Component | Version | Vendor | CVE Count | Worst CVSS | Max EPSS | CVEs |")
-    lines.append("|-----------|---------|--------|-----------|------------|----------|------|")
+    lines.append(
+        "| Component | Version | Vendor | CVE Count | Worst CVSS | "
+        "Max EPSS | KEV | CVEs |"
+    )
+    lines.append(
+        "|-----------|---------|--------|-----------|------------|"
+        "----------|-----|------|"
+    )
     for c in components:
         match = next((m for m in matches if m.component is c), None)
         if match and match.cves:
             worst = match.max_cvss
             max_epss = match.max_epss
+            kev = "yes" if match.has_kev else "no"
             cves = ", ".join(cve.cve for cve in match.cves)
         else:
             worst = 0.0
             max_epss = 0.0
+            kev = "no"
             cves = "-"
         lines.append(
             f"| {c.name} | {c.version} | {c.vendor or '-'} | "
             f"{len(match.cves) if match else 0} | {worst:.1f} | "
-            f"{max_epss:.4f} | {cves} |"
+            f"{max_epss:.4f} | {kev} | {cves} |"
         )
     lines.append("")
 
