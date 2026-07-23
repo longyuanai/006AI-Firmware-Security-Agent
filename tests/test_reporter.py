@@ -55,6 +55,14 @@ def test_render_includes_kev_count_and_marker():
     assert "| yes | CVE-X |" in md
 
 
+def test_render_includes_prisk_summary_and_column():
+    cs = [Component(name="a", version="1.0", category="network")]
+    ms = [_b(cs[0], [CveRecord("CVE-X", 10.0, "x", epss=1.0, kev=True)])]
+    md = _r(cs, ms, [])
+    assert "Highest PRisk: **1.000**" in md
+    assert "| 1.000 | 10.0 |" in md
+
+
 def test_render_includes_inventory_table():
     cs = [_c("a", "1.0"), _c("b", "2.0")]
     md = _r(cs, [], [])

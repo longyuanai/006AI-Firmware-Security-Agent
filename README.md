@@ -76,6 +76,17 @@ python -m ai_firmware_agent.cli scan \
 Install Binwalk and squashfs-tools on the analysis host. Extraction failures
 return a concise CLI error and do not expose firmware contents externally.
 
+## PRisk v0.1
+
+Vulnerable components are ranked before LLM enrichment using:
+
+`0.25 × (CVSS / 10) + 0.25 × EPSS + 0.20 × KEV + 0.15 × Exploit + 0.15 × Exposure`
+
+All inputs are clamped to `0..1`. `Component.extra.exploit` and
+`Component.extra.exposure` can provide explicit context; otherwise KEV supplies
+known-exploitation evidence and a documented component-category mapping supplies
+the exposure estimate.
+
 ## Test
 
 ```bash

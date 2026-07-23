@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ai_firmware_agent.scoring import PRiskScore
 
 from shared_llm_core import (
     ChatMessage,
@@ -36,6 +39,12 @@ class ComponentMatch:
     def has_kev(self) -> bool:
         return any(c.kev for c in self.cves)
 
+    @property
+    def prisk(self) -> float:
+        from ai_firmware_agent.scoring import score_component
+
+        return score_component(self).score
+
 
 @dataclass(frozen=True)
 class ComponentNarrative:
@@ -56,6 +65,7 @@ class ComponentNarrative:
             f"  \n_vendor: {self.match.component.vendor or 'unknown'}_  \n"
             f"- **CVEs**: {cves_md}\n"
             f"- **Max CVSS**: {self.match.max_cvss:.1f}\n"
+            f"- **PRisk**: {self.match.prisk:.3f}\n"
             f"- **Business impact**: {self.business_impact}\n"
             f"- **Remediation**: {self.remediation_summary}\n"
             f"- **Rationale**: {self.rationale}\n"
@@ -107,6 +117,13 @@ def match_components(
     return matches
 
 
+def score_and_rank_matches(matches: list[ComponentMatch]) -> list[PRiskScore]:
+    """Calculate PRisk scores and rank vulnerable components."""
+    from ai_firmware_agent.scoring import rank_matches
+
+    return rank_matches(matches)
+
+
 def _parse(match: ComponentMatch, resp: ChatResponse) -> ComponentNarrative:
     data = json.loads(_strip(resp.choices[0].message.content))
     return ComponentNarrative(
@@ -127,11 +144,12 @@ def enrich_top_components(
     """Enrich the top-N matches (highest CVSS first) via the LLM."""
     if not matches:
         return []
-    ordered = sorted(matches, key=lambda m: m.max_cvss, reverse=True)
+    ordered = [item.component for item in score_and_rank_matches(matches)]
     out: list[ComponentNarrative] = []
     for m in ordered[:top_n]:
         blob = {
             "component": m.component.to_prompt_dict(),
+            "prisk": m.prisk,
             "cves": [
                 {
                     "cve": c.cve,

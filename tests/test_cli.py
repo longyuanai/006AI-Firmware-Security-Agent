@@ -109,4 +109,5 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path):
     assert calls == {"epss": 1, "kev": 1}
     report = report_path.read_text(encoding="utf-8")
     assert "CISA KEV-listed CVEs: **1**" in report
+    assert "Highest PRisk: **" in report
     assert "| 0.9000 | yes | CVE-2024-3094 |" in report

@@ -14,7 +14,7 @@
 | CVE-002 | 接 EPSS API | done | 2026-07-24 | 2026-07-24 | FIRST EPSS v1 + 0.0 fallback |
 | CVE-003 | 接 CISA KEV | done | 2026-07-24 | 2026-07-24 | CISA JSON feed + false fallback |
 | FW-001 | 真实固件解包 (binwalk + squashfs) | done | 2026-07-24 | 2026-07-24 | 真实 SquashFS demo + Windows-safe runner |
-| FW-002 | PRisk 加权公式 v0.1 | pending | | | |
+| FW-002 | PRisk 加权公式 v0.1 | done | 2026-07-24 | 2026-07-24 | 归一化 0-1 + analyzer 排序 |
 | RPT-001 | Markdown 报告加图表 (matplotlib PNG) | pending | | | |
 | DOCKER-001 | Dockerfile + docker-compose.yml | pending | | | |
 | CI-001 | GitHub Actions: lint + pytest + type check | pending | | | |

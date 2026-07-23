@@ -71,6 +71,24 @@ def test_enrich_orders_by_max_cvss():
     assert out[1].match.component.name == "busybox"
 
 
+def test_enrich_orders_by_prisk_when_threat_intelligence_differs():
+    high_cvss = ComponentMatch(
+        Component(name="high-cvss", version="1", category="compression"),
+        [CveRecord("CVE-HIGH", 9.0, "high")],
+    )
+    active = ComponentMatch(
+        Component(name="active", version="1", category="remote_access"),
+        [CveRecord("CVE-ACTIVE", 7.0, "active", epss=0.9, kev=True)],
+    )
+    router = _stub_router(
+        {"business_impact": "x", "remediation_summary": "y", "rationale": "z"}
+    )
+
+    out = enrich_top_components([high_cvss, active], router, top_n=2)  # type: ignore[arg-type]
+
+    assert out[0].match.component.name == "active"
+
+
 def test_enrich_empty_returns_empty():
     router = _stub_router({})
     assert enrich_top_components([], router) == []  # type: ignore[arg-type]

@@ -21,6 +21,7 @@ from ai_firmware_agent.analyzer import (
     ComponentMatch,
     enrich_top_components,
     match_components,
+    score_and_rank_matches,
 )
 from ai_firmware_agent.eps import enrich_with_epss
 from ai_firmware_agent.kev import enrich_with_kev
@@ -139,6 +140,11 @@ def scan(
             )
             for match in matches
         ]
+
+    scores = score_and_rank_matches(matches)
+    matches = [item.component for item in scores]
+    if scores:
+        console.print(f"  [green]Highest PRisk: {scores[0].score:.3f}[/green]")
 
     console.print(f"[bold]Enriching top {top_n}[/bold] via shared-llm-core ...")
     with LLMRouter.from_env() as router:

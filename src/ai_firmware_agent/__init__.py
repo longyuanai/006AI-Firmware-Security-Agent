@@ -14,6 +14,7 @@ from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import parse_firmware
 from ai_firmware_agent.reporter import render_markdown
+from ai_firmware_agent.scoring import PRiskScore, rank_matches, score_component
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 
 __version__ = "0.1.0"
@@ -23,6 +24,7 @@ __all__ = [
     "ComponentNarrative",
     "CveRecord",
     "FirmwareUnpackError",
+    "PRiskScore",
     "enrich_top_components",
     "epss_lookup",
     "kev_lookup",
@@ -30,6 +32,8 @@ __all__ = [
     "nvd_lookup",
     "parse_firmware",
     "render_markdown",
+    "rank_matches",
+    "score_component",
     "unpack_firmware",
     "__version__",
 ]
