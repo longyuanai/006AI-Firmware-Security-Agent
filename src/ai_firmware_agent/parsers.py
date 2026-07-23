@@ -22,7 +22,8 @@ import yaml
 from ai_firmware_agent.normalizer import Component
 
 
-def _manifest_to_components(raw: str) -> list[Component]:
+def components_from_manifest(raw: str) -> list[Component]:
+    """Normalize a YAML component manifest into inventory records."""
     data = yaml.safe_load(raw) or {}
     items = data.get("components") or []
     out: list[Component] = []
@@ -55,7 +56,7 @@ def parse_firmware(stream: IO[bytes]) -> list[Component]:
         if f is None:
             return []
         raw = f.read().decode("utf-8", errors="replace")
-    return _manifest_to_components(raw)
+    return components_from_manifest(raw)
 
 
 def parse_firmware_file(path: str | Path) -> list[Component]:

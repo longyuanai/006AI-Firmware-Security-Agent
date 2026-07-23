@@ -62,6 +62,20 @@ python -m ai_firmware_agent.cli scan --demo --use-epss -o report.md
 python -m ai_firmware_agent.cli scan --demo --use-kev -o report.md
 ```
 
+## Scan a firmware image
+
+`.bin` inputs are extracted locally with Binwalk and `unsquashfs`; archives
+containing `manifest.yml` remain supported.
+
+```bash
+python -m ai_firmware_agent.cli scan \
+  --input samples/firmware_demo/demo-router.squashfs.bin \
+  --output report.md
+```
+
+Install Binwalk and squashfs-tools on the analysis host. Extraction failures
+return a concise CLI error and do not expose firmware contents externally.
+
 ## Test
 
 ```bash

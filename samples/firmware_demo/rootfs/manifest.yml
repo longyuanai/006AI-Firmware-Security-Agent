@@ -1,0 +1,18 @@
+vendor: longyuanai-demo
+model: demo-router-squashfs-v1
+components:
+  - name: busybox
+    version: 1.36.1
+    vendor: busybox.net
+    category: userspace
+    path: /bin/busybox
+  - name: openssl
+    version: 1.1.0
+    vendor: openssl.org
+    category: crypto
+    path: /usr/lib/libssl.so
+  - name: lighttpd
+    version: 1.4.50
+    vendor: lighttpd.net
+    category: web_server
+    path: /usr/sbin/lighttpd

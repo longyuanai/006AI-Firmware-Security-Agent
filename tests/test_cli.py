@@ -29,6 +29,26 @@ def test_cli_scan_missing_file(tmp_path):
     assert res.exit_code != 0
 
 
+def test_cli_routes_bin_input_to_unpack(monkeypatch, tmp_path):
+    import ai_firmware_agent.cli as cli_module
+
+    firmware = tmp_path / "router.bin"
+    firmware.write_bytes(b"hsqs")
+    calls = []
+
+    def unpack_stub(path):
+        calls.append(path)
+        return []
+
+    monkeypatch.setattr(cli_module, "unpack_firmware", unpack_stub)
+    runner = CliRunner()
+    res = runner.invoke(cli, ["scan", "--input", str(firmware)])
+
+    assert res.exit_code == 0
+    assert calls == [str(firmware)]
+    assert "No components parsed" in res.output
+
+
 def test_cli_scan_help_lists_nvd_api_key():
     runner = CliRunner()
     res = runner.invoke(cli, ["scan", "--help"])

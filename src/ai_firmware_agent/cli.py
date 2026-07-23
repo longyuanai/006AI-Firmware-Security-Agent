@@ -1,7 +1,8 @@
 """CLI: `firmware-agent scan --input FILE --output FILE`.
 
 Supports two input modes:
-  - .tar.gz file containing manifest.yml (real PoC path)
+  - .bin file extracted by binwalk / unsquashfs
+  - .tar.gz file containing manifest.yml (legacy PoC path)
   - --demo flag: build a tiny synthetic firmware in-memory (zero-config)
 """
 
@@ -10,6 +11,7 @@ from __future__ import annotations
 import os
 import sys
 from functools import partial
+from pathlib import Path
 
 import click
 from rich.console import Console
@@ -26,6 +28,7 @@ from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
 from ai_firmware_agent.reporter import render_markdown
+from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 
 console = Console()
 
@@ -59,7 +62,7 @@ def scan(
     use_epss: bool,
     use_kev: bool,
 ) -> None:
-    """Scan a firmware file (or demo) and emit a Markdown report."""
+    """Scan a .bin or manifest archive (or demo) and emit Markdown."""
     from shared_llm_core.router import LLMRouter
 
     if not demo and not input_path:
@@ -86,7 +89,13 @@ def scan(
         source = "<demo>"
     else:
         console.print(f"[bold]Parsing[/bold] {input_path} ...")
-        parsed = parse_firmware_file(input_path)  # type: ignore[arg-type]
+        try:
+            if Path(input_path).suffix.lower() == ".bin":  # type: ignore[arg-type]
+                parsed = unpack_firmware(input_path)  # type: ignore[arg-type]
+            else:
+                parsed = parse_firmware_file(input_path)  # type: ignore[arg-type]
+        except FirmwareUnpackError as exc:
+            raise click.ClickException(str(exc)) from exc
         source = input_path or "<unknown>"
 
     console.print(f"  [green]{len(parsed)}[/green] components inventoried")
