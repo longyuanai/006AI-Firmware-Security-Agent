@@ -1,0 +1,14 @@
+services:
+  firmware-agent:
+    image: ai-firmware-agent:0.1
+    build:
+      context: .
+      dockerfile: Dockerfile
+      additional_contexts:
+        shared: ../000shared-llm-core
+    environment:
+      NVD_API_KEY: ${NVD_API_KEY:-}
+    volumes:
+      - ./samples:/firmware:ro
+      - ./output:/output
+    command: ["--help"]

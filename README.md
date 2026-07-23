@@ -93,6 +93,33 @@ When `--output report.md` is used, the CLI also writes
 `report-vulnerability-distribution.png` using Matplotlib's headless Agg
 renderer. The Markdown report links the image with a portable relative path.
 
+## Docker
+
+The build uses a named BuildKit context for the sibling `000shared-llm-core`
+repository:
+
+```bash
+docker build \
+  --build-context shared=../000shared-llm-core \
+  -t ai-firmware-agent:0.1 .
+
+docker run --rm ai-firmware-agent:0.1 --help
+```
+
+Docker Compose configures that context automatically:
+
+```bash
+docker compose build
+docker compose run --rm firmware-agent scan \
+  --input /firmware/firmware_demo/demo-router.squashfs.bin \
+  --output /output/report.md \
+  --top-n 0
+```
+
+Set `NVD_API_KEY` in the shell when higher NVD rate limits are needed. The
+container runs as UID `10001`, mounts sample firmware read-only, and keeps
+reports in `./output`.
+
 ## Test
 
 ```bash

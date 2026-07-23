@@ -1,0 +1,17 @@
+.git
+.github
+.pytest_cache
+.pytest-tmp*
+.test-deps
+.uv-cache
+.venv
+.env
+__pycache__
+*.py[cod]
+*.egg-info
+AUDIT
+docs
+output
+report*.md
+report*.png
+tests
