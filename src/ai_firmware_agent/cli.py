@@ -9,6 +9,7 @@ Supports two input modes:
 from __future__ import annotations
 
 import os
+import json
 import sys
 from functools import partial
 from pathlib import Path
@@ -26,6 +27,7 @@ from ai_firmware_agent.analyzer import (
 from ai_firmware_agent.eps import enrich_with_epss
 from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.kev import enrich_with_kev
+from ai_firmware_agent.gateway_envelope import scan_payload_to_envelope
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
@@ -42,8 +44,14 @@ def cli() -> None:
 
 
 @cli.command()
-@click.option("--input", "-i", "input_path", type=click.Path(exists=True))
+@click.option("--input", "-i", "input_path", type=str)
 @click.option("--output", "-o", "output_path", default="-", type=click.Path())
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    help="Read an adapter JSON payload and emit a Finding envelope.",
+)
 @click.option("--top-n", default=3, show_default=True, type=int)
 @click.option("--provider", "-p", default="local", show_default=True)
 @click.option("--demo", is_flag=True, help="Use a built-in synthetic firmware instead of --input.")
@@ -57,6 +65,7 @@ def cli() -> None:
 def scan(
     input_path: str | None,
     output_path: str,
+    json_output: bool,
     top_n: int,
     provider: str,
     demo: bool,
@@ -67,8 +76,19 @@ def scan(
     """Scan a .bin or manifest archive (or demo) and emit Markdown."""
     from shared_llm_core.router import LLMRouter
 
+    if json_output:
+        raw_payload = input_path if input_path is not None else sys.stdin.read()
+        envelope = scan_payload_to_envelope(raw_payload)
+        click.echo(json.dumps(envelope, ensure_ascii=False))
+        return
+
     if not demo and not input_path:
         raise click.UsageError("Provide --input FILE or pass --demo.")
+    if input_path and not Path(input_path).is_file():
+        raise click.BadParameter(
+            f"Path does not exist: {input_path}",
+            param_hint="--input",
+        )
 
     os.environ.setdefault("LLM_PROVIDERS", provider)
 
@@ -178,6 +198,10 @@ def scan(
 
 
 def main() -> None:
+    if "--json" in sys.argv[1:] and (
+        len(sys.argv) == 1 or sys.argv[1].startswith("-")
+    ):
+        sys.argv.insert(1, "scan")
     cli()
 
 

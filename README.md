@@ -180,3 +180,17 @@ execute firmware commands or produce deployable exploit code.
 `shared_llm_core.MultiAgentOrchestrator`. Until the sibling shared core is
 upgraded from 0.1 to 0.5, use the injected-orchestrator form for tests and
 offline integration.
+
+## IntegrationGateway adapter
+
+The firmware CLI accepts the shared-integration JSON subprocess contract:
+
+```bash
+echo '{"firmware_path":"C:\\absolute\\path\\firmware.tar.gz"}' \
+  | python -m ai_firmware_agent.cli scan --json
+```
+
+`FirmwareAdapter` also invokes the equivalent command without the explicit
+`scan` token; both forms return `{"findings": [...], "errors": [...]}`.
+Adapter scans are offline and deterministic: component parsing, the bundled
+CVE fallback, and PRisk run locally without an NVD or LLM request.
