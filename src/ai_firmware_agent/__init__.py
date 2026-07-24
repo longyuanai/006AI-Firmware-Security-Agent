@@ -7,6 +7,7 @@ business-language risk narrative.
 """
 
 from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
+from ai_firmware_agent.adapter import FirmwareProductAdapter
 from ai_firmware_agent.attack_chain import AttackChain, reconstruct_attack_chain
 from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
@@ -30,6 +31,7 @@ __all__ = [
     "AttackChain",
     "EmulationResult",
     "FirmwareUnpackError",
+    "FirmwareProductAdapter",
     "KnownCvePattern",
     "PRiskScore",
     "enrich_top_components",

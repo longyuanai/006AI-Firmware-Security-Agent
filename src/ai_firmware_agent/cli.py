@@ -79,6 +79,9 @@ def scan(
     if json_output:
         raw_payload = input_path if input_path is not None else sys.stdin.read()
         envelope = scan_payload_to_envelope(raw_payload)
+        for warning in envelope.get("errors", ()):
+            if warning.startswith(("GatewayPayloadError:", "FileNotFoundError:")):
+                click.echo(f"[006-firmware] WARNING: {warning}", err=True)
         # The shared adapter always decodes stdout as UTF-8. Escaping non-ASCII
         # keeps the byte stream portable even when Windows selects a legacy
         # console encoding for the subprocess pipe.

@@ -142,14 +142,22 @@ def _parse_components(path: Path) -> list[Component]:
     if path.suffix.lower() == ".bin":
         try:
             return unpack_firmware(path)
-        except FirmwareUnpackError:
+        except FirmwareUnpackError as unpack_error:
             manifest = _matching_openwrt_manifest(path)
-            if manifest is None:
-                raise
-            components = _components_from_openwrt_manifest(manifest)
-            if not components:
-                raise
-            return components
+            if manifest is not None:
+                components = _components_from_openwrt_manifest(manifest)
+                if components:
+                    return components
+            try:
+                return parse_firmware_file(path)
+            except (
+                OSError,
+                tarfile.TarError,
+                UnicodeError,
+                ValueError,
+                yaml.YAMLError,
+            ):
+                raise unpack_error from None
     return parse_firmware_file(path)
 
 
