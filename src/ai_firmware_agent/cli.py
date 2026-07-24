@@ -79,7 +79,10 @@ def scan(
     if json_output:
         raw_payload = input_path if input_path is not None else sys.stdin.read()
         envelope = scan_payload_to_envelope(raw_payload)
-        click.echo(json.dumps(envelope, ensure_ascii=False))
+        # The shared adapter always decodes stdout as UTF-8. Escaping non-ASCII
+        # keeps the byte stream portable even when Windows selects a legacy
+        # console encoding for the subprocess pipe.
+        click.echo(json.dumps(envelope, ensure_ascii=True))
         return
 
     if not demo and not input_path:

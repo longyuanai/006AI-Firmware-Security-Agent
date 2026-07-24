@@ -30,6 +30,13 @@ jobs:
           path: 000shared-llm-core
           token: ${{ secrets.SHARED_CORE_TOKEN || github.token }}
 
+      - name: Check out shared integration
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository_owner }}/000shared-integration
+          path: 000shared-integration
+          token: ${{ secrets.SHARED_INTEGRATION_TOKEN || secrets.SHARED_CORE_TOKEN || github.token }}
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:

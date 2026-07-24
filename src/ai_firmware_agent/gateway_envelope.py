@@ -140,8 +140,50 @@ def materialize_firmware(
 
 def _parse_components(path: Path) -> list[Component]:
     if path.suffix.lower() == ".bin":
-        return unpack_firmware(path)
+        try:
+            return unpack_firmware(path)
+        except FirmwareUnpackError:
+            manifest = _matching_openwrt_manifest(path)
+            if manifest is None:
+                raise
+            components = _components_from_openwrt_manifest(manifest)
+            if not components:
+                raise
+            return components
     return parse_firmware_file(path)
+
+
+def _matching_openwrt_manifest(firmware: Path) -> Path | None:
+    """Find the official target manifest shipped beside an OpenWrt image."""
+    matches: list[Path] = []
+    for candidate in firmware.parent.glob("*.manifest"):
+        prefix = candidate.name.removesuffix(".manifest")
+        if firmware.name.startswith(f"{prefix}-"):
+            matches.append(candidate)
+    if not matches:
+        return None
+    return max(matches, key=lambda candidate: len(candidate.name))
+
+
+def _components_from_openwrt_manifest(manifest: Path) -> list[Component]:
+    """Parse OpenWrt's ``package - version`` release manifest format."""
+    components: list[Component] = []
+    for raw_line in manifest.read_text(encoding="utf-8", errors="replace").splitlines():
+        name, separator, version = raw_line.partition(" - ")
+        name = name.strip()
+        version = version.strip()
+        if not separator or not name or not version:
+            continue
+        components.append(
+            Component(
+                name=name,
+                version=version,
+                vendor="OpenWrt",
+                category="package",
+                path=str(manifest),
+            )
+        )
+    return components
 
 
 def _finding_payload(

@@ -22,6 +22,7 @@
 | ZERODAY-001-A | 组件版本 + 已知 CVE 模式 0-day 候选 | done | 2026-07-24 | 2026-07-24 | 相邻 release line + 置信度/理由 Finding |
 | ATTACKCHAIN-001-A | firmware 漏洞到 root shell 攻击链还原 | done | 2026-07-24 | 2026-07-24 | §7 SCOUT/EXPLOITER/REVIEWER + §9 Finding |
 | FW-CLI-001 | IntegrationGateway FirmwareAdapter JSON CLI 契约 | done | 2026-07-24 | 2026-07-24 | path/url payload + Finding envelope |
+| FW-LIVE-001 | 公开固件样本 + IntegrationGateway 联调 | done | 2026-07-24 | 2026-07-24 | OpenWrt 23.05.5 + official manifest + registry E2E |
 
 ---
 

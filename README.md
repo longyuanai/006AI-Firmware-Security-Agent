@@ -26,13 +26,12 @@ firmware.tar.gz ──► Parser ──► Component[*] ──► CVE DB lookup
                                       Markdown Firmware Report
 ```
 
-## PoC shortcuts
+## Implementation notes
 
-- **Firmware format** is a tiny `tar.gz` containing `manifest.yml` plus a
-  fake `rootfs/`. Real firmware parsing (binwalk → squashfs → package list)
-  is out of scope for PoC; the parser interface is designed so a real
-  Binwalk-backed parser can replace `_manifest_to_components()` without
-  touching anything else.
+- **Firmware formats** include the original `tar.gz` fixture and real `.bin`
+  images extracted with Binwalk/`unsquashfs`. The tracked OpenWrt sample is
+  paired with its official target manifest so adapter tests remain
+  deterministic on Windows hosts without native extraction tools.
 - **CVE fallback** is a hard-coded `mock_lookup()` covering 7 known
   packages (busybox, openssl, openssh, xz, lighttpd, dropbear, kernel).
   NVD failures use this local data so scans remain available offline.
@@ -75,6 +74,48 @@ python -m ai_firmware_agent.cli scan \
 
 Install Binwalk and squashfs-tools on the analysis host. Extraction failures
 return a concise CLI error and do not expose firmware contents externally.
+
+### Scan the public OpenWrt sample
+
+The repository includes a 5,043,932-byte OpenWrt 23.05.5 image and its
+official target package manifest. Source URLs and SHA-256 values are recorded
+in [`samples/README.md`](samples/README.md).
+
+```powershell
+$sample = (Resolve-Path `
+  "samples/openwrt-23.05.5-ath79-tiny-engenius-eap350-v1-initramfs-kernel.bin").Path
+$body = @{ firmware_path = $sample } | ConvertTo-Json -Compress
+$env:PYTHONIOENCODING = "utf-8"
+$OutputEncoding = New-Object Text.UTF8Encoding($false)
+
+# Direct FirmwareAdapter-compatible envelope
+$body | python -m ai_firmware_agent.cli scan --json
+```
+
+To exercise the shared IntegrationGateway on port `18080`, expose the sibling
+sources and start Uvicorn:
+
+```powershell
+$env:PYTHONPATH = "../000shared-integration/src;../000shared-llm-core/src;src"
+python -m uvicorn shared_integration.gateway:app --host 127.0.0.1 --port 18080
+```
+
+In another terminal:
+
+```powershell
+$sample = (Resolve-Path `
+  "samples/openwrt-23.05.5-ath79-tiny-engenius-eap350-v1-initramfs-kernel.bin").Path
+$body = @{ firmware_path = $sample } | ConvertTo-Json -Compress
+$utf8Body = [Text.Encoding]::UTF8.GetBytes($body)
+
+Invoke-RestMethod http://127.0.0.1:18080/v0.5/006/scan `
+  -Method Post -ContentType "application/json; charset=utf-8" -Body $utf8Body
+Invoke-RestMethod http://127.0.0.1:18080/v0.5/health
+```
+
+The frozen `FindingSource.FIRMWARE` value is `"006"`, so the contract route is
+`POST /v0.5/006/scan`. The label `/v0.5/firmware/scan` is not a valid
+`IntegrationGateway` source route.
 
 ## PRisk v0.1
 
@@ -124,10 +165,11 @@ reports in `./output`.
 
 `.github/workflows/ci.yml` runs Ruff, mypy, and pytest on both
 `ubuntu-latest` and `windows-latest` with Python 3.11. The workflow checks out
-`000shared-llm-core` from the same GitHub owner as a sibling directory, matching
-the local Poetry path dependency. If that repository is private, grant the
-workflow read access by defining a `SHARED_CORE_TOKEN` repository secret with
-read-only contents permission for `000shared-llm-core`.
+`000shared-llm-core` and `000shared-integration` from the same GitHub owner as
+sibling directories, matching the local integration layout. If either
+repository is private, grant the workflow read access with `SHARED_CORE_TOKEN`
+and (if needed) `SHARED_INTEGRATION_TOKEN`, both with read-only contents
+permission.
 
 Run the same quality gates locally:
 

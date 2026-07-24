@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
+from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -114,3 +116,21 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path):
     assert "Highest PRisk: **" in report
     assert "![Vulnerability distribution](report-vulnerability-distribution.png)" in report
     assert "| 0.9000 | yes | CVE-2024-3094 |" in report
+
+
+def test_scan_real_firmware_sample():
+    sample = (
+        Path(__file__).parents[1]
+        / "samples"
+        / "openwrt-23.05.5-ath79-tiny-engenius-eap350-v1-initramfs-kernel.bin"
+    )
+    payload = json.dumps({"firmware_path": str(sample.resolve())})
+    result = CliRunner().invoke(cli, ["scan", "--input", payload, "--json"])
+
+    assert result.exit_code == 0, result.output
+    envelope = json.loads(result.output)
+    assert envelope["errors"] == []
+    assert envelope["findings"][0]["title"].startswith(
+        "CVE-2023-39810 in busybox 1.36.1"
+    )
+    assert "PRisk " in envelope["findings"][0]["narrative"]
