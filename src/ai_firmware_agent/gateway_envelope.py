@@ -76,8 +76,8 @@ def _parse_payload(raw: str) -> dict[str, str]:
             raise GatewayPayloadError("firmware_path must be a string")
         path = Path(firmware_path)
         if not path.is_absolute():
-            raise GatewayPayloadError("firmware_path must be absolute")
-        return {"firmware_path": firmware_path}
+            path = Path.cwd() / path
+        return {"firmware_path": str(path.resolve())}
     if not isinstance(firmware_url, str):
         raise GatewayPayloadError("firmware_url must be a string")
     return {"firmware_url": _validate_url(firmware_url)}
@@ -250,6 +250,11 @@ def scan_path_to_envelope(path: Path) -> dict[str, Any]:
         return {
             "findings": [],
             "errors": [f"{type(exc).__name__}: {exc}"],
+            "summary": {
+                "component_count": 0,
+                "finding_count": 0,
+                "status": "warning",
+            },
         }
 
     matches = match_components(components, lookup_fn=mock_lookup)
@@ -274,7 +279,36 @@ def scan_path_to_envelope(path: Path) -> dict[str, Any]:
         for match in matches
         for cve in match.cves
     ]
-    return {"findings": findings, "errors": []}
+    return {
+        "findings": findings,
+        "errors": [],
+        "summary": {
+            "component_count": len(components),
+            "finding_count": len(findings),
+            "status": "ok",
+        },
+    }
+
+
+def components_from_payload(
+    raw_payload: str,
+    *,
+    client: httpx.Client | None = None,
+) -> tuple[list[Component], list[str]]:
+    """Resolve an envelope payload and return inventory for SBOM export."""
+    try:
+        with materialize_firmware(raw_payload, client=client) as path:
+            return _parse_components(path), []
+    except (
+        FirmwareUnpackError,
+        GatewayPayloadError,
+        OSError,
+        tarfile.TarError,
+        UnicodeError,
+        ValueError,
+        yaml.YAMLError,
+    ) as exc:
+        return [], [f"{type(exc).__name__}: {exc}"]
 
 
 def scan_payload_to_envelope(
@@ -290,4 +324,9 @@ def scan_payload_to_envelope(
         return {
             "findings": [],
             "errors": [f"{type(exc).__name__}: {exc}"],
+            "summary": {
+                "component_count": 0,
+                "finding_count": 0,
+                "status": "warning",
+            },
         }

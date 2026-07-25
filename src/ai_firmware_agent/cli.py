@@ -27,11 +27,15 @@ from ai_firmware_agent.analyzer import (
 from ai_firmware_agent.eps import enrich_with_epss
 from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.kev import enrich_with_kev
-from ai_firmware_agent.gateway_envelope import scan_payload_to_envelope
+from ai_firmware_agent.gateway_envelope import (
+    components_from_payload,
+    scan_payload_to_envelope,
+)
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
 from ai_firmware_agent.reporter import render_markdown
+from ai_firmware_agent.sbom import write_cyclonedx_bom
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 
 console = Console()
@@ -52,6 +56,12 @@ def cli() -> None:
     is_flag=True,
     help="Read an adapter JSON payload and emit a Finding envelope.",
 )
+@click.option(
+    "--sbom",
+    "sbom_path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Write a CycloneDX 1.5 JSON SBOM and skip LLM analysis.",
+)
 @click.option("--top-n", default=3, show_default=True, type=int)
 @click.option("--provider", "-p", default="local", show_default=True)
 @click.option("--demo", is_flag=True, help="Use a built-in synthetic firmware instead of --input.")
@@ -66,6 +76,7 @@ def scan(
     input_path: str | None,
     output_path: str,
     json_output: bool,
+    sbom_path: Path | None,
     top_n: int,
     provider: str,
     demo: bool,
@@ -76,8 +87,48 @@ def scan(
     """Scan a .bin or manifest archive (or demo) and emit Markdown."""
     from shared_llm_core.router import LLMRouter
 
+    raw_payload = input_path or ""
+    if (json_output or sbom_path is not None) and input_path is None:
+        raw_payload = sys.stdin.read()
+    if sbom_path is not None:
+        if not raw_payload:
+            raise click.UsageError("Provide --input for SBOM export.")
+        if not raw_payload.lstrip().startswith("{"):
+            raw_payload = json.dumps(
+                {"firmware_path": str(Path(raw_payload).resolve())}
+            )
+        components, sbom_errors = components_from_payload(raw_payload)
+        if sbom_errors:
+            for warning in sbom_errors:
+                click.echo(f"[006-firmware] WARNING: {warning}", err=True)
+            if json_output:
+                click.echo(
+                    json.dumps(
+                        {
+                            "findings": [],
+                            "errors": sbom_errors,
+                            "summary": {
+                                "component_count": 0,
+                                "finding_count": 0,
+                                "status": "warning",
+                            },
+                        },
+                        ensure_ascii=True,
+                    )
+                )
+                return
+            raise click.ClickException("SBOM inventory extraction failed")
+        written = write_cyclonedx_bom(components, sbom_path)
+        click.echo(
+            f"Wrote CycloneDX SBOM: {written}",
+            err=json_output,
+        )
+        if not json_output:
+            return
+        input_path = raw_payload
+
     if json_output:
-        raw_payload = input_path if input_path is not None else sys.stdin.read()
+        raw_payload = input_path if input_path is not None else raw_payload
         envelope = scan_payload_to_envelope(raw_payload)
         for warning in envelope.get("errors", ()):
             if warning.startswith(("GatewayPayloadError:", "FileNotFoundError:")):
