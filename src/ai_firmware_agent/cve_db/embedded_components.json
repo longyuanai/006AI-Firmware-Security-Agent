@@ -1,0 +1,12 @@
+{
+  "components": [
+    {"name": "busybox", "vendors": ["busybox"]},
+    {"name": "dnsmasq", "vendors": ["thekelleys"]},
+    {"name": "dropbear", "vendors": ["dropbear_ssh_project"]},
+    {"name": "lighttpd", "vendors": ["lighttpd"]},
+    {"name": "openssh", "vendors": ["openbsd"]},
+    {"name": "openssl", "vendors": ["openssl"]},
+    {"name": "u-boot", "vendors": ["denx"]},
+    {"name": "xz", "vendors": ["tukaani"]}
+  ]
+}
