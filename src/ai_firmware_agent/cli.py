@@ -8,9 +8,11 @@ Supports two input modes:
 
 from __future__ import annotations
 
+import asyncio
 import os
 import json
 import sys
+from collections.abc import Callable, Iterable
 from functools import partial
 from pathlib import Path
 
@@ -26,6 +28,8 @@ from ai_firmware_agent.analyzer import (
 )
 from ai_firmware_agent.eps import enrich_with_epss
 from ai_firmware_agent.charts import render_vulnerability_pie
+from ai_firmware_agent.cve_db import CveRecord, EmbeddedCVEDatabase, local_db_lookup, mock_lookup
+from ai_firmware_agent.cve_db.sync import sync_database
 from ai_firmware_agent.kev import enrich_with_kev
 from ai_firmware_agent.gateway_envelope import (
     components_from_payload,
@@ -40,11 +44,112 @@ from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 
 console = Console()
 
+CVE_SOURCES = ("nvd", "local", "mock")
+
+
+def _lookup_provider(
+    source: str,
+    *,
+    nvd_api_key: str | None,
+    db_path: Path | None = None,
+) -> Callable[[Component], list[CveRecord]]:
+    """Resolve the ``--cve-source`` choice to an analyzer lookup callable."""
+    if source == "local":
+        return local_db_lookup(db_path=db_path)
+    if source == "mock":
+        return mock_lookup
+    return partial(nvd_lookup, api_key=nvd_api_key)
+
+
+def _reenrich(
+    matches: list[ComponentMatch],
+    enricher: Callable[[Iterable[CveRecord]], list[CveRecord]],
+) -> list[ComponentMatch]:
+    """Apply one batched CVE enricher across every match, preserving order."""
+    enriched = {
+        record.cve: record
+        for record in enricher(
+            record for match in matches for record in match.cves
+        )
+    }
+    return [
+        ComponentMatch(
+            component=match.component,
+            cves=[enriched.get(record.cve, record) for record in match.cves],
+        )
+        for match in matches
+    ]
+
 
 @click.group()
 @click.version_option(__version__)
 def cli() -> None:
     """AI-Firmware-Security-Agent: firmware SBOM + CVE analyzer."""
+
+
+@cli.group("cve-db")
+def cve_db() -> None:
+    """Manage the offline embedded-component CVE cache."""
+
+
+@cve_db.command("sync")
+@click.option(
+    "--component",
+    "components",
+    multiple=True,
+    help="Sync only these components (default: the embedded component list).",
+)
+@click.option(
+    "--db-path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Cache location (or set AI_FIRMWARE_CVE_DB).",
+)
+@click.option(
+    "--nvd-api-key",
+    envvar="NVD_API_KEY",
+    help="NVD API key (or set NVD_API_KEY). Raises the sync rate limit.",
+)
+def cve_db_sync(
+    components: tuple[str, ...],
+    db_path: Path | None,
+    nvd_api_key: str | None,
+) -> None:
+    """Download NVD records into the local SQLite cache."""
+    if nvd_api_key:
+        os.environ["NVD_API_KEY"] = nvd_api_key
+    database = EmbeddedCVEDatabase(db_path)
+    console.print(f"[bold]Syncing[/bold] CVE cache at {database.path} ...")
+    written = asyncio.run(
+        sync_database(database, components=list(components) or None)
+    )
+    stats = asyncio.run(database.stats())
+    console.print(f"  [green]{written}[/green] rows written")
+    console.print(
+        f"  cache now holds [green]{stats['cves']}[/green] CVEs "
+        f"across [green]{stats['products']}[/green] products "
+        f"({stats['rows']} rows)"
+    )
+
+
+@cve_db.command("status")
+@click.option(
+    "--db-path",
+    type=click.Path(dir_okay=False, path_type=Path),
+    help="Cache location (or set AI_FIRMWARE_CVE_DB).",
+)
+def cve_db_status(db_path: Path | None) -> None:
+    """Report what the local CVE cache currently contains."""
+    database = EmbeddedCVEDatabase(db_path)
+    stats = asyncio.run(database.stats())
+    console.print(f"Database: {database.path}")
+    console.print(f"CVEs:     {stats['cves']}")
+    console.print(f"Products: {stats['products']}")
+    console.print(f"Rows:     {stats['rows']}")
+    if not stats["rows"]:
+        console.print(
+            "[yellow]Cache is empty; run "
+            "`firmware-agent cve-db sync` first.[/yellow]"
+        )
 
 
 @cli.command()
@@ -62,6 +167,13 @@ def cli() -> None:
     type=click.Path(dir_okay=False, path_type=Path),
     help="Write a CycloneDX 1.5 JSON SBOM and skip LLM analysis.",
 )
+@click.option(
+    "--cve-source",
+    type=click.Choice(CVE_SOURCES),
+    default="nvd",
+    show_default=True,
+    help="CVE provider: NVD API, the offline local cache, or bundled mock data.",
+)
 @click.option("--top-n", default=3, show_default=True, type=int)
 @click.option("--provider", "-p", default="local", show_default=True)
 @click.option("--demo", is_flag=True, help="Use a built-in synthetic firmware instead of --input.")
@@ -77,6 +189,7 @@ def scan(
     output_path: str,
     json_output: bool,
     sbom_path: Path | None,
+    cve_source: str,
     top_n: int,
     provider: str,
     demo: bool,
@@ -183,41 +296,30 @@ def scan(
         console.print("[yellow]No components parsed; nothing to do.[/yellow]")
         return
 
-    console.print("[bold]Matching[/bold] NVD CVE database ...")
-    matches = match_components(parsed, lookup_fn=partial(nvd_lookup, api_key=nvd_api_key))
+    sources = {
+        "nvd": "NVD CVE database",
+        "local": "local embedded CVE cache",
+        "mock": "bundled mock CVE data",
+    }
+    console.print(f"[bold]Matching[/bold] {sources[cve_source]} ...")
+    matches = match_components(
+        parsed,
+        lookup_fn=_lookup_provider(cve_source, nvd_api_key=nvd_api_key),
+    )
     console.print(f"  [green]{len(matches)}[/green] vulnerable components")
+    if cve_source == "local" and not matches:
+        console.print(
+            "[yellow]Local cache returned no matches; run "
+            "`firmware-agent cve-db sync` to populate it.[/yellow]"
+        )
 
     if use_epss and matches:
         console.print("[bold]Enriching[/bold] CVEs with FIRST EPSS ...")
-        enriched = {
-            record.cve: record
-            for record in enrich_with_epss(
-                record for match in matches for record in match.cves
-            )
-        }
-        matches = [
-            ComponentMatch(
-                component=match.component,
-                cves=[enriched.get(record.cve, record) for record in match.cves],
-            )
-            for match in matches
-        ]
+        matches = _reenrich(matches, enrich_with_epss)
 
     if use_kev and matches:
         console.print("[bold]Checking[/bold] CISA Known Exploited Vulnerabilities ...")
-        enriched = {
-            record.cve: record
-            for record in enrich_with_kev(
-                record for match in matches for record in match.cves
-            )
-        }
-        matches = [
-            ComponentMatch(
-                component=match.component,
-                cves=[enriched.get(record.cve, record) for record in match.cves],
-            )
-            for match in matches
-        ]
+        matches = _reenrich(matches, enrich_with_kev)
 
     scores = score_and_rank_matches(matches)
     matches = [item.component for item in scores]

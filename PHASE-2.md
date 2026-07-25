@@ -46,18 +46,21 @@ class BinwalkRunner:
 - 现在 fixture 是 mock
 - 真固件(路由器 / IoT)必须真解包
 
-### Hook B · 嵌入式 CVE 数据库(本地 NVD 子集)
+### Hook B · 嵌入式 CVE 数据库(本地 NVD 子集) — ✅ 已接入产品路径
 
 **目标**:frequently-embedded 软件(openssh / busybox / dnsmasq 等)的 CVE 本地查询。
 
-**派活文档**:`027-FW-CVE-DB.md`(待起草)
+- 下载 NVD CPE match 到本地 SQLite,离线可用、无 API 限速
+- CLI 入口:`cve-db sync` / `cve-db status` / `scan --cve-source local`
+- 缓存位置可用 `AI_FIRMWARE_CVE_DB` 或 `--db-path` 重定向
 
-- 启动时下载一次 NVD CPE match,本地 SQlite
-- 离线可用,无 API 限速
+**已修的坑**:
 
-**为什么 Phase-2**:
-- 嵌入式扫描常在隔离环境跑
-- 不在线就要有本地 DB
+- 主键原为单列 `cve_id`,一个 CVE 的多条 CPE 会互相覆盖(只留最后一条),
+  绝大多数版本因此查不出来;现改为 `(cve_id, cpe_id)` 复合主键
+- 只支持字面版本相等,NVD 的 `versionStartIncluding` / `versionEndExcluding`
+  区间记录全部丢弃;现已入库并参与匹配
+- `sync` 返回的是"尝试写入数"而非实际落库数,掩盖了上面两个问题
 
 ### Hook C · SBOM 输出(CycloneDX)
 

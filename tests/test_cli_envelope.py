@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import httpx
+import pytest
 from click.testing import CliRunner
 
 from ai_firmware_agent.cli import cli
@@ -102,7 +103,12 @@ def test_scan_rejects_private_firmware_url_gracefully():
 
 
 def test_firmware_adapter_subprocess_end_to_end(tmp_path):
-    from shared_integration.adapters import FirmwareAdapter
+    # Skip rather than fail without the sibling checkout, matching
+    # tests/integration/test_firmware_adapter_e2e.py.
+    FirmwareAdapter = pytest.importorskip(
+        "shared_integration.adapters",
+        reason="000shared-integration sibling checkout is required",
+    ).FirmwareAdapter
 
     root = Path(__file__).parents[1]
     adapter = FirmwareAdapter(root)

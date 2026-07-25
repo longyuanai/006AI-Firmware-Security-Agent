@@ -32,6 +32,9 @@ firmware.tar.gz ──► Parser ──► Component[*] ──► CVE DB lookup
   images extracted with Binwalk/`unsquashfs`. The tracked OpenWrt sample is
   paired with its official target manifest so adapter tests remain
   deterministic on Windows hosts without native extraction tools.
+- **CVE providers** are selected with `--cve-source`: `nvd` (default, live
+  NVD 2.0 API), `local` (the offline SQLite cache described below), or
+  `mock` (bundled data only).
 - **CVE fallback** is a hard-coded `mock_lookup()` covering 7 known
   packages (busybox, openssl, openssh, xz, lighttpd, dropbear, kernel).
   NVD failures use this local data so scans remain available offline.
@@ -116,6 +119,40 @@ Invoke-RestMethod http://127.0.0.1:18080/v0.5/health
 The frozen `FindingSource.FIRMWARE` value is `"006"`, so the contract route is
 `POST /v0.5/006/scan`. The label `/v0.5/firmware/scan` is not a valid
 `IntegrationGateway` source route.
+
+## Offline CVE cache
+
+Embedded scanning often runs on isolated networks, so NVD records for
+frequently embedded components can be synchronized into a local SQLite cache
+and queried with no network access at all.
+
+```bash
+# Populate the cache (all components in embedded_components.json)
+python -m ai_firmware_agent.cli cve-db sync
+
+# Or just one component
+python -m ai_firmware_agent.cli cve-db sync --component busybox
+
+# Inspect what the cache holds
+python -m ai_firmware_agent.cli cve-db status
+
+# Scan entirely offline against the cache
+python -m ai_firmware_agent.cli scan --demo --cve-source local -o report.md
+```
+
+The cache location defaults to a path inside the installed package and can be
+redirected with `AI_FIRMWARE_CVE_DB` or `--db-path`, which is what containers
+and read-only installs should use.
+
+Matching honours both ways NVD expresses "affected": a literal CPE version
+and a wildcard CPE carrying `versionStartIncluding` / `versionEndExcluding`
+bounds. A wildcard CPE with no bounds at all is deliberately **not** treated
+as a match, since "every version ever released" is not actionable.
+
+A row is identified by the `(cve_id, cpe_id)` pair, because one CVE routinely
+affects many CPEs. The schema is versioned via `PRAGMA user_version`; a cache
+written by an older layout is rebuilt on the next `initialize()` rather than
+migrated, as it is a regenerable download.
 
 ## PRisk v0.1
 

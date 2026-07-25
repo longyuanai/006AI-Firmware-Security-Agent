@@ -1,6 +1,6 @@
 # 006 AI-Firmware-Security-Agent · v0.1 TODO
 
-> **项目状态**: PoC ✅ (23/23 tests passing)
+> **项目状态**: PoC ✅ (173 passed / 4 skipped)
 > **共享接口**: [v0.1-contract.md](../../000shared-llm-core/docs/v0.1-contract.md) (已冻结)
 > **派活模板**: [CODEX_INSTRUCTIONS.md](../../CODEX_INSTRUCTIONS.md)
 
