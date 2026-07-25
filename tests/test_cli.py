@@ -60,9 +60,8 @@ def test_cli_scan_help_lists_nvd_api_key():
     assert "--use-kev" in res.output
 
 
-def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path):
+def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path, stub_router_factory):
     import ai_firmware_agent.cli as cli_module
-    from shared_llm_core.router import LLMRouter
 
     calls = {"epss": 0, "kev": 0}
 
@@ -79,17 +78,13 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path):
         calls["kev"] += 1
         return [replace(record, kev=True) for record in records]
 
-    class StubRouter:
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *_):
-            return None
+    # Patch LLMRouter.from_env via the conftest fixture; replaces the
+    # inline StubRouter context-manager class previously defined here.
+    stub_router_factory()
 
     monkeypatch.setattr(cli_module, "nvd_lookup", nvd_stub)
     monkeypatch.setattr(cli_module, "enrich_with_epss", epss_stub)
     monkeypatch.setattr(cli_module, "enrich_with_kev", kev_stub)
-    monkeypatch.setattr(LLMRouter, "from_env", lambda: StubRouter())
 
     report_path = tmp_path / "report.md"
     runner = CliRunner()

@@ -211,3 +211,206 @@ CLI 命令 `firmware-agent scan -i firmware.bin -o report.md`,带 `--demo` 用 m
 - `src/ai_firmware_agent/reporter.py` — 报告
 - `samples/firmware_demo/` — PoC demo 固件
 - `docs/TODO.md` — v0.1 issue 清单
+
+## 14. Phase-2 实施(v0.6+ 改造指令)
+
+> **本文是 Codex 实施 Phase-2 的入口**。路线图 v0.6 之后所有改动以此为准。
+
+### 14.1 Hook A · 真实 binwalk 集成(v0.6)
+
+**目标**:替换 mock 解包为 `binwalk -e` 调用,**真**提取文件系统 + 内核 + 应用。
+
+**新增文件**:
+
+```
+src/ai_firmware_agent/binwalk_runner.py    # BinwalkRunner:asyncio subprocess 调 binwalk
+src/ai_firmware_agent/parsers/
+├── __init__.py
+├── mock.py             # 现有 mock,搬过来
+└── binwalk.py          # BinwalkRunner 包装,ExtractResult dataclass
+```
+
+**API 形状**:
+
+```python
+@dataclass
+class ExtractResult:
+    firmware_path: Path
+    output_dir: Path
+    files: list[Path]            # 提取出来的文件清单
+    signatures: list[str]        # binwalk 识别到的 magic
+    error: str | None
+
+
+class BinwalkRunner:
+    def __init__(self, binwalk_path: str = "binwalk", timeout: int = 120):
+        self._binwalk = binwalk_path
+        self._timeout = timeout
+
+    async def extract(self, firmware_path: Path, *, output_dir: Path) -> ExtractResult:
+        """asyncio.create_subprocess_exec('binwalk', '-e', '--directory', ..., firmware_path)"""
+        ...
+
+    async def is_available(self) -> bool:
+        """shutil.which('binwalk') or PATH check"""
+        ...
+```
+
+**集成方式**:
+
+- `src/ai_firmware_agent/scanner.py` —— 如果 `binwalk` 在 PATH,用 BinwalkRunner;否则 fallback mock
+- 不在 fixture 上强依赖 binwalk(测试用 mock,生产环境用户装)
+
+**测试要求**:
+
+- `tests/test_binwalk_runner.py` —— 用 `unittest.mock` mock asyncio subprocess
+- `tests/test_binwalk_availability.py` —— mock `shutil.which` 返回 None / "C:\\binwalk.exe"
+- `tests/test_scanner_fallback.py` —— binwalk 不可用时,scanner 自动 fallback 到 mock
+- 真集成测试标记 `@pytest.mark.integration`,**默认 skip**,本地有 binwalk 时才跑
+
+**commit 计划**(2 commit):
+
+1. `feat(binwalk): add BinwalkRunner async subprocess + ExtractResult schema`
+2. `feat(scanner): add binwalk availability check + fallback to mock parser`
+
+### 14.2 Hook B · 嵌入式 CVE 数据库(v0.7)
+
+**目标**:frequently-embedded 软件(openssh / busybox / dnsmasq 等)的 CVE 本地查询,离线可用。
+
+**新增文件**:
+
+```
+src/ai_firmware_agent/cve_db/
+├── __init__.py
+├── schema.sql               # SQLite schema(cpe_id, cve_id, cvss_v3, description)
+├── sync.py                  # 启动时下载一次 NVD CPE match,写入 SQLite
+├── query.py                 # 按 component + version 查 CVE
+├── embedded_components.json # frequently-embedded 名单(openssh / busybox / dnsmasq / dropbear / ...)
+└── data/
+    └── cve_cache.db         # SQLite 文件,gitignore
+```
+
+**Schema**:
+
+```sql
+CREATE TABLE cve_entries (
+    cve_id TEXT PRIMARY KEY,
+    cpe_id TEXT NOT NULL,         -- "cpe:2.3:a:openbsd:openssh:8.5p1:*:*:*:*:*:*"
+    cvss_v3 REAL,
+    description TEXT,
+    in_known_exploited BOOLEAN DEFAULT 0,
+    synced_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_cpe ON cve_entries(cpe_id);
+```
+
+**API**:
+
+```python
+class EmbeddedCVEDatabase:
+    def __init__(self, db_path: Path = Path("data/cve_cache.db")):
+        self._db = db_path
+
+    async def sync(self) -> int:
+        """下载 NVD CPE match,upsert。返回写入条数"""
+
+    async def lookup(self, component: str, version: str) -> list[CVEEntry]:
+        """按 (component, version) 模糊匹配 CPE"""
+```
+
+**集成方式**:
+
+- `src/ai_firmware_agent/scanner.py` —— 扫描出组件 + 版本后调 `db.lookup(...)`,命中 CVE 时产 Finding
+- CLI 首次启动会触发 sync,**用 NVD_API_KEY** 时 50 req/30s,没有时 5 req/30s
+
+**测试要求**:
+
+- `tests/test_cve_db_schema.py` —— schema 合法,索引在
+- `tests/test_cve_db_sync.py` —— mock NVD response,验证 upsert 行为
+- `tests/test_cve_db_query.py` —— 用预填 SQLite fixture,验证 lookup
+- `tests/test_cve_db_offline.py` —— 数据库已同步后,断网仍可查
+
+**commit 计划**(3 commit):
+
+1. `feat(cve_db): add SQLite schema + embedded_components.json + DB class`
+2. `feat(cve_db): add NVD CPE match sync + rate limit handling`
+3. `feat(scanner): integrate CVE lookup into scan pipeline + Finding emission`
+
+### 14.3 Hook C · SBOM CycloneDX 导出(v0.7)
+
+**目标**:导出 CycloneDX 1.5 SBOM,从 firmware extract 出 component + version + license。
+
+**新增文件**:
+
+```
+src/ai_firmware_agent/sbom/
+├── __init__.py
+├── cyclonedx.py             # CycloneDX 1.5 BOM 生成
+└── template.json            # CycloneDX BOM 模板
+```
+
+**CycloneDX 1.5 BOM 形状**:
+
+```json
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "components": [
+    {
+      "type": "library",
+      "name": "openssh",
+      "version": "8.5p1",
+      "licenses": [{"license": {"name": "BSD-2-Clause"}}],
+      "purl": "pkg:generic/openssh@8.5p1"
+    }
+  ]
+}
+```
+
+**CLI 增量**:
+
+```bash
+ai-firmware-agent scan --input '{...}' --sbom output/sbom.json
+```
+
+**测试要求**:
+
+- `tests/test_cyclonedx_bom.py` —— 用 jsonschema 验证(需 `jsonschema` 依赖)
+- `tests/test_sbom_components.py` —— fixture firmware → 已知 components
+- `tests/test_cli_sbom_output.py` —— `--sbom` 路径正确生成
+
+**commit 计划**(1 commit):
+
+- `feat(sbom): add CycloneDX 1.5 exporter + --sbom CLI flag`
+
+### 14.4 不要做的事
+
+- ❌ **不**真跑 firmware(可能含漏洞代码)—— sandbox 内或 dry-run
+- ❌ **不**把 firmware 内容写日志(隐私 + 体积)
+- ❌ **不**破坏 v0.5 §15 envelope 的 `source="006"` 注入(集成层靠这个分流)
+- ❌ **不**改 `Finding` schema(共享契约,改了就破 v0.5 冻结)
+- ❌ **不**动 `tests/test_cli_envelope.py`(§15 契约测试是冻结基线)
+- ❌ **不**强依赖 binwalk PATH(测试用 mock,fail-open fallback)
+
+### 14.5 验收清单
+
+Codex 完工后跑:
+
+```powershell
+& 'C:\Users\15072\AppData\Local\Programs\Python\Python314\python.exe' `
+  -m pytest tests/ `
+  --basetemp=C:/pytest-tmp/006-phase2 `
+  -o addopts= `
+  -q --tb=short
+
+& 'C:\Users\15072\AppData\Local\Programs\Python\Python314\python.exe' `
+  -m ai_firmware_agent scan --input '{"firmware_path":"tests/fixtures/sample.bin"}' --json
+```
+
+预期:≥ 130 passed(原 116 + Phase-2 新增 14);CLI envelope 仍是 `{"findings": [...], "summary": {...}}`。
+
+---
+
+**最近修订**: 2026-07-25 · Claude 把 PHASE-2.md 合并进 §14
+**下次回看触发**: v0.6 启动 / Hook A 启动 / CVE DB 同步
