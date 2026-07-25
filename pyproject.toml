@@ -33,6 +33,9 @@ build-backend = "poetry.core.masonry.api"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--basetemp=.pytest-tmp"
+markers = [
+    "integration: opt-in tests requiring external analysis tools",
+]
 
 [tool.ruff]
 target-version = "py311"
