@@ -8,8 +8,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
+from shared_llm_core.finding import Finding, FindingSeverity, FindingSource
 
 from ai_firmware_agent.binwalk_runner import BinwalkRunner, ExtractResult
+from ai_firmware_agent.cve_db import CVEEntry, EmbeddedCVEDatabase
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers.binwalk import extract_components
 from ai_firmware_agent.parsers.mock import parse_firmware_file
@@ -22,13 +24,80 @@ class ScanResult:
     parser: str
     extraction: ExtractResult | None = None
     errors: list[str] = field(default_factory=list)
+    findings: list[Finding] = field(default_factory=list)
 
 
 class FirmwareScanner:
     """Inventory firmware without executing any extracted content."""
 
-    def __init__(self, runner: BinwalkRunner | None = None) -> None:
+    def __init__(
+        self,
+        runner: BinwalkRunner | None = None,
+        database: EmbeddedCVEDatabase | None = None,
+    ) -> None:
         self._runner = runner or BinwalkRunner()
+        self._database = database or EmbeddedCVEDatabase()
+
+    @staticmethod
+    def _severity(entry: CVEEntry) -> FindingSeverity:
+        score = entry.cvss_v3 or 0.0
+        if score >= 9.0:
+            return FindingSeverity.CRITICAL
+        if score >= 7.0:
+            return FindingSeverity.HIGH
+        if score >= 4.0:
+            return FindingSeverity.MEDIUM
+        if score > 0.0:
+            return FindingSeverity.LOW
+        return FindingSeverity.INFO
+
+    async def _add_cve_findings(self, result: ScanResult) -> ScanResult:
+        for component in result.components:
+            try:
+                entries = await self._database.lookup(
+                    component.name,
+                    component.version,
+                )
+            except Exception as exc:  # isolate a corrupt/unavailable local cache
+                result.errors.append(
+                    f"cve lookup failed for {component.name}: "
+                    f"{type(exc).__name__}"
+                )
+                continue
+            for entry in entries:
+                score = entry.cvss_v3 or 0.0
+                result.findings.append(
+                    Finding(
+                        id="",
+                        source=FindingSource.FIRMWARE,
+                        severity=self._severity(entry),
+                        confidence=(
+                            0.9 if entry.in_known_exploited else 0.75
+                        ),
+                        title=(
+                            f"{entry.cve_id} in "
+                            f"{component.name} {component.version}"
+                        ),
+                        description=entry.description,
+                        host=str(result.firmware_path),
+                        cve=entry.cve_id,
+                        evidence=(
+                            f"component={component.name}@{component.version}",
+                            f"cpe={entry.cpe_id}",
+                            f"cvss={score:.1f}",
+                        ),
+                        tags=frozenset({"firmware", "embedded-cve"}),
+                        metadata={
+                            "component": component.name,
+                            "version": component.version,
+                            "cvss_v3": entry.cvss_v3,
+                            "in_known_exploited": (
+                                entry.in_known_exploited
+                            ),
+                        },
+                    )
+                )
+        return result
 
     async def scan(
         self,
@@ -52,11 +121,13 @@ class FirmwareScanner:
                 runner=self._runner,
             )
             if components:
-                return ScanResult(
-                    firmware_path=firmware,
-                    components=components,
-                    parser="binwalk",
-                    extraction=extraction,
+                return await self._add_cve_findings(
+                    ScanResult(
+                        firmware_path=firmware,
+                        components=components,
+                        parser="binwalk",
+                        extraction=extraction,
+                    )
                 )
             if extraction.error:
                 errors.append(extraction.error)
@@ -78,12 +149,14 @@ class FirmwareScanner:
         ) as exc:
             errors.append(f"mock parser failed: {type(exc).__name__}")
             components = []
-        return ScanResult(
-            firmware_path=firmware,
-            components=components,
-            parser="mock",
-            extraction=extraction,
-            errors=errors,
+        return await self._add_cve_findings(
+            ScanResult(
+                firmware_path=firmware,
+                components=components,
+                parser="mock",
+                extraction=extraction,
+                errors=errors,
+            )
         )
 
 
