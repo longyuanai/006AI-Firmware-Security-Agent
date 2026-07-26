@@ -78,6 +78,22 @@ python -m ai_firmware_agent.cli scan \
 Install Binwalk and squashfs-tools on the analysis host. Extraction failures
 return a concise CLI error and do not expose firmware contents externally.
 
+### Handling untrusted images
+
+Firmware is untrusted input and `binwalk -Me` extracts recursively, so a
+crafted image can expand without bound. `unpack_firmware()` caps extraction
+output at `max_bytes` (2 GiB) and `max_files` (200,000), checked after each
+extraction step, and aborts before the expanded tree is walked or parsed.
+Those caps bound what this process does with the result — they are not a
+substitute for a disk quota or a container around the extractor itself.
+
+`firmware_url` downloads are restricted to public addresses. Every resolved
+IP is checked, not just literal ones, and redirects are followed manually so
+each hop is re-validated: `follow_redirects=True` would otherwise let a
+public URL bounce to loopback or a cloud metadata endpoint after the initial
+check had already passed. DNS rebinding is narrowed but not closed, since the
+connection resolves again after validation.
+
 ### Scan the public OpenWrt sample
 
 The repository includes a 5,043,932-byte OpenWrt 23.05.5 image and its

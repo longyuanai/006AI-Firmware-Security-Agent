@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import socket
 import tarfile
 import tempfile
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 import yaml
@@ -23,6 +24,11 @@ from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 from ai_firmware_agent.v05_compat import FindingSeverity, new_finding
 
 MAX_FIRMWARE_BYTES = 10 * 1024 * 1024
+MAX_REDIRECTS = 5
+
+# Resolves a hostname to its IP addresses. Injectable so tests can supply a
+# fake DNS answer alongside their fake HTTP transport.
+Resolver = Callable[[str], list[str]]
 
 
 class GatewayPayloadError(ValueError):
@@ -41,7 +47,34 @@ def _severity(cvss: float) -> FindingSeverity:
     return FindingSeverity.INFO
 
 
-def _validate_url(raw_url: str) -> str:
+def _system_resolver(host: str) -> list[str]:
+    try:
+        infos = socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)
+    except OSError as exc:
+        raise GatewayPayloadError(f"firmware_url host does not resolve: {host}") from exc
+    return [str(info[4][0]) for info in infos]
+
+
+def _reject_private_address(value: str) -> None:
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError as exc:
+        raise GatewayPayloadError(f"firmware_url resolved to an invalid address: {value}") from exc
+    if not address.is_global:
+        raise GatewayPayloadError("firmware_url must use a public address")
+
+
+def _validate_url(raw_url: str, *, resolver: Resolver = _system_resolver) -> str:
+    """Reject any URL that does not reach a public address.
+
+    A literal-IP check alone is not enough: a hostname under the caller's
+    control can point at loopback, link-local metadata services or RFC 1918
+    space, so every resolved address is checked too.
+
+    This narrows but cannot close DNS rebinding, because the connection
+    performs its own resolution after this check. Treat downloads as
+    untrusted input regardless.
+    """
     parsed = urlparse(raw_url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise GatewayPayloadError("firmware_url must use http or https")
@@ -49,15 +82,21 @@ def _validate_url(raw_url: str) -> str:
     if host == "localhost" or host.endswith(".localhost"):
         raise GatewayPayloadError("firmware_url must not target localhost")
     try:
-        address = ipaddress.ip_address(host)
+        ipaddress.ip_address(host)
     except ValueError:
-        return raw_url
-    if not address.is_global:
-        raise GatewayPayloadError("firmware_url must use a public address")
+        addresses = resolver(host)
+        if not addresses:
+            raise GatewayPayloadError(
+                f"firmware_url host does not resolve: {host}"
+            ) from None
+    else:
+        addresses = [host]
+    for address in addresses:
+        _reject_private_address(address)
     return raw_url
 
 
-def _parse_payload(raw: str) -> dict[str, str]:
+def _parse_payload(raw: str, *, resolver: Resolver = _system_resolver) -> dict[str, str]:
     try:
         payload = json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -80,7 +119,19 @@ def _parse_payload(raw: str) -> dict[str, str]:
         return {"firmware_path": str(path.resolve())}
     if not isinstance(firmware_url, str):
         raise GatewayPayloadError("firmware_url must be a string")
-    return {"firmware_url": _validate_url(firmware_url)}
+    return {"firmware_url": _validate_url(firmware_url, resolver=resolver)}
+
+
+def _stream_to_disk(response: httpx.Response, destination: Path) -> None:
+    total = 0
+    with destination.open("wb") as stream:
+        for chunk in response.iter_bytes():
+            total += len(chunk)
+            if total > MAX_FIRMWARE_BYTES:
+                raise GatewayPayloadError(
+                    "downloaded firmware exceeds 10 MiB limit"
+                )
+            stream.write(chunk)
 
 
 def _download_firmware(
@@ -88,21 +139,40 @@ def _download_firmware(
     destination: Path,
     *,
     client: httpx.Client | None = None,
+    resolver: Resolver = _system_resolver,
 ) -> None:
+    """Download with redirects followed manually so each hop is validated.
+
+    ``follow_redirects=True`` would let a public URL bounce the request to
+    loopback or a cloud metadata endpoint after the initial check passed.
+    """
     owns_client = client is None
-    active_client = client or httpx.Client(follow_redirects=True, timeout=30.0)
-    total = 0
+    active_client = client or httpx.Client(timeout=30.0)
+    current = url
     try:
-        with active_client.stream("GET", url) as response:
-            response.raise_for_status()
-            with destination.open("wb") as stream:
-                for chunk in response.iter_bytes():
-                    total += len(chunk)
-                    if total > MAX_FIRMWARE_BYTES:
+        for _ in range(MAX_REDIRECTS + 1):
+            with active_client.stream(
+                "GET",
+                current,
+                follow_redirects=False,
+            ) as response:
+                if response.is_redirect:
+                    location = response.headers.get("location", "").strip()
+                    if not location:
                         raise GatewayPayloadError(
-                            "downloaded firmware exceeds 10 MiB limit"
+                            "firmware_url redirect is missing a location"
                         )
-                    stream.write(chunk)
+                    current = _validate_url(
+                        urljoin(current, location),
+                        resolver=resolver,
+                    )
+                    continue
+                response.raise_for_status()
+                _stream_to_disk(response, destination)
+                return
+        raise GatewayPayloadError(
+            f"firmware_url exceeded {MAX_REDIRECTS} redirects"
+        )
     except httpx.HTTPError as exc:
         raise GatewayPayloadError(f"firmware download failed: {exc}") from exc
     finally:
@@ -115,9 +185,10 @@ def materialize_firmware(
     raw_payload: str,
     *,
     client: httpx.Client | None = None,
+    resolver: Resolver = _system_resolver,
 ) -> Iterator[Path]:
     """Resolve a path or bounded public HTTP(S) download for one scan."""
-    payload = _parse_payload(raw_payload)
+    payload = _parse_payload(raw_payload, resolver=resolver)
     if "firmware_path" in payload:
         path = Path(payload["firmware_path"]).resolve(strict=True)
         if not path.is_file():
@@ -134,7 +205,7 @@ def materialize_firmware(
         if suffix.lower() not in {".bin", ".tar.gz", ".tgz"}:
             suffix = ".bin"
         downloaded = Path(temp_dir) / f"downloaded-firmware{suffix}"
-        _download_firmware(url, downloaded, client=client)
+        _download_firmware(url, downloaded, client=client, resolver=resolver)
         yield downloaded
 
 
@@ -294,10 +365,15 @@ def components_from_payload(
     raw_payload: str,
     *,
     client: httpx.Client | None = None,
+    resolver: Resolver = _system_resolver,
 ) -> tuple[list[Component], list[str]]:
     """Resolve an envelope payload and return inventory for SBOM export."""
     try:
-        with materialize_firmware(raw_payload, client=client) as path:
+        with materialize_firmware(
+            raw_payload,
+            client=client,
+            resolver=resolver,
+        ) as path:
             return _parse_components(path), []
     except (
         FirmwareUnpackError,
@@ -315,10 +391,15 @@ def scan_payload_to_envelope(
     raw_payload: str,
     *,
     client: httpx.Client | None = None,
+    resolver: Resolver = _system_resolver,
 ) -> Mapping[str, Any]:
     """Materialize an adapter payload and return a JSON-ready envelope."""
     try:
-        with materialize_firmware(raw_payload, client=client) as path:
+        with materialize_firmware(
+            raw_payload,
+            client=client,
+            resolver=resolver,
+        ) as path:
             return scan_path_to_envelope(path)
     except (GatewayPayloadError, OSError) as exc:
         return {

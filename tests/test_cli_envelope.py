@@ -89,6 +89,8 @@ def test_scan_firmware_url_with_mock_transport(tmp_path):
         envelope = scan_payload_to_envelope(
             '{"firmware_url":"https://firmware.example/demo.tar.gz"}',
             client=client,
+            # The transport is fake, so DNS is faked alongside it.
+            resolver=lambda _host: ["93.184.216.34"],
         )
     assert envelope["errors"] == []
     assert envelope["findings"][0]["cve"] == "CVE-2018-19052"
