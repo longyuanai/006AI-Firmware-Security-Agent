@@ -7,51 +7,25 @@ import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from ai_firmware_agent.extraction import (
+    MAX_EXTRACTED_BYTES,
+    MAX_EXTRACTED_FILES,
+    FirmwareUnpackError,
+    check_extraction_size,
+)
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers import components_from_manifest
 
 CommandRunner = Callable[..., subprocess.CompletedProcess[str]]
 _SQUASHFS_MAGICS = {b"hsqs", b"sqsh", b"shsq", b"qshs"}
 
-# Firmware is untrusted input and binwalk -Me extracts recursively, so a
-# crafted image can expand without bound. These caps are checked after each
-# extraction step and abort the scan before the expanded tree is walked or
-# parsed. They bound what this process does with the result; they are not a
-# substitute for running extraction under a disk quota or in a container.
-MAX_EXTRACTED_BYTES = 2 * 1024 * 1024 * 1024
-MAX_EXTRACTED_FILES = 200_000
-
-
-class FirmwareUnpackError(RuntimeError):
-    """Raised when a firmware image cannot be safely extracted."""
-
-
-def _check_extraction_size(
-    root: Path,
-    *,
-    max_bytes: int,
-    max_files: int,
-) -> None:
-    """Abort when an extracted tree exceeds the configured caps."""
-    total_bytes = 0
-    total_files = 0
-    for path in root.rglob("*"):
-        try:
-            if path.is_symlink() or not path.is_file():
-                continue
-            total_bytes += path.stat().st_size
-        except OSError:
-            continue
-        total_files += 1
-        if total_files > max_files:
-            raise FirmwareUnpackError(
-                f"Extraction produced more than {max_files} files; "
-                "refusing to continue"
-            )
-        if total_bytes > max_bytes:
-            raise FirmwareUnpackError(
-                f"Extraction exceeded {max_bytes} bytes; refusing to continue"
-            )
+__all__ = [
+    "MAX_EXTRACTED_BYTES",
+    "MAX_EXTRACTED_FILES",
+    "FirmwareUnpackError",
+    "check_extraction_size",
+    "unpack_firmware",
+]
 
 
 def _run(
@@ -160,7 +134,7 @@ def unpack_firmware(
             except FirmwareUnpackError as exc:
                 errors.append(str(exc))
 
-        _check_extraction_size(extracted, max_bytes=max_bytes, max_files=max_files)
+        check_extraction_size(extracted, max_bytes=max_bytes, max_files=max_files)
         components = _components_from_tree(extracted)
         if components is not None:
             return components
@@ -186,7 +160,7 @@ def unpack_firmware(
             except FirmwareUnpackError as exc:
                 errors.append(str(exc))
                 continue
-            _check_extraction_size(
+            check_extraction_size(
                 destination,
                 max_bytes=max_bytes,
                 max_files=max_files,

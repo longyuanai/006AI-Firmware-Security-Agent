@@ -62,14 +62,30 @@ class BinwalkRunner:
   区间记录全部丢弃;现已入库并参与匹配
 - `sync` 返回的是"尝试写入数"而非实际落库数,掩盖了上面两个问题
 
-### Hook C · SBOM 输出(CycloneDX)
+### Hook C · SBOM 输出(CycloneDX) — ✅ 含 VEX
 
 **目标**:导出 CycloneDX 1.5 SBOM,从 firmware extract 出 component + version + license。
 
-**派活文档**:`028-FW-SBOM.md`(待起草)
+- `scan --sbom sbom.json`,组件带 `bom-ref`,确定性输出(无时间戳/随机 serial)
+- `vulnerabilities` (VEX) 段:CVE + CVSS rating + `affects` 反查组件
+- EPSS / KEV 无 CycloneDX 原生字段,走 `ai-firmware-agent:*` properties
+- SBOM 是全清单批量导出,未显式指定 `--cve-source` 时留在离线源
+  (NVD provider 每组件一次请求,OpenWrt 样本 135 个包会直接撞限速)
 
-- 复用 Hook A 的 extract 结果
-- 与 002 VULN 的 SBOM 集成对齐
+---
+
+## 已知债务(未做,需要架构决策)
+
+**两套解包栈并存**:
+
+| | 栈 A(产品路径) | 栈 B(仅测试可达) |
+|---|---|---|
+| 解包 | `unpack.py`(同步,`binwalk -Me` + `unsquashfs` 回退) | `binwalk_runner.py` + `parsers/binwalk.py`(异步,`binwalk -e`) |
+| 编排 | `cli.py` / `gateway_envelope.py` | `scanner.py`(`FirmwareScanner`) |
+
+体积上限已抽到 `extraction.py` 由两条路径共用(原来只有栈 A 有,栈 B 是无防护的绕行口)。
+但收敛成一条主线会动到不可信输入的解包路径,且要么丢掉 `unsquashfs` 回退,
+要么丢掉异步设计——需要先定主线再动,不适合顺手改。
 
 ---
 
