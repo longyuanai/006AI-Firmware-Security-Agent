@@ -136,6 +136,24 @@ The frozen `FindingSource.FIRMWARE` value is `"006"`, so the contract route is
 `POST /v0.5/006/scan`. The label `/v0.5/firmware/scan` is not a valid
 `IntegrationGateway` source route.
 
+## SBOM export
+
+```bash
+python -m ai_firmware_agent.cli scan --input firmware.bin --sbom sbom.json
+```
+
+The CycloneDX 1.5 document carries a `vulnerabilities` (VEX) array alongside
+the component list: each CVE the scan resolved, its CVSS rating, and the
+components it affects, linked by `bom-ref`. EPSS and CVSS have no
+first-class CycloneDX field, so they travel as `ai-firmware-agent:*`
+properties. One CVE affecting several components is a single entry with
+several `affects` refs. Output is deterministic — no timestamps or random
+serial numbers — so SBOMs can be diffed across builds.
+
+SBOM export walks the entire inventory, and the NVD provider issues one
+request per component, so it stays on the offline providers unless
+`--cve-source` is given explicitly.
+
 ## Offline CVE cache
 
 Embedded scanning often runs on isolated networks, so NVD records for

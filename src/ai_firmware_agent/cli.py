@@ -17,6 +17,7 @@ from functools import partial
 from pathlib import Path
 
 import click
+from click.core import ParameterSource
 from rich.console import Console
 
 from ai_firmware_agent import __version__
@@ -78,6 +79,33 @@ def _reenrich(
             cves=[enriched.get(record.cve, record) for record in match.cves],
         )
         for match in matches
+    ]
+
+
+def _sbom_vulnerabilities(
+    components: list[Component],
+    cve_source: str,
+    nvd_api_key: str | None,
+) -> list[tuple[Component, CveRecord]]:
+    """Resolve CVEs for every inventoried component, for the VEX section.
+
+    SBOM export walks the whole inventory, and the NVD provider issues one
+    request per component, so an unattended default would mean hundreds of
+    rate-limited requests. Unless --cve-source was given explicitly, this
+    stays on the offline providers.
+    """
+    context = click.get_current_context(silent=True)
+    explicit = (
+        context is not None
+        and context.get_parameter_source("cve_source")
+        is not ParameterSource.DEFAULT
+    )
+    source = cve_source if explicit else "mock"
+    lookup = _lookup_provider(source, nvd_api_key=nvd_api_key)
+    return [
+        (component, record)
+        for component in components
+        for record in lookup(component)
     ]
 
 
@@ -231,7 +259,11 @@ def scan(
                 )
                 return
             raise click.ClickException("SBOM inventory extraction failed")
-        written = write_cyclonedx_bom(components, sbom_path)
+        written = write_cyclonedx_bom(
+            components,
+            sbom_path,
+            _sbom_vulnerabilities(components, cve_source, nvd_api_key),
+        )
         click.echo(
             f"Wrote CycloneDX SBOM: {written}",
             err=json_output,
