@@ -169,7 +169,7 @@ def test_cli_sbom_does_not_reach_nvd_by_default(monkeypatch, tmp_path):
     def fail(*_args, **_kwargs):
         raise AssertionError("SBOM export must stay offline by default")
 
-    monkeypatch.setattr(cli_module, "nvd_lookup", fail)
+    monkeypatch.setattr(cli_module, "NvdClient", fail)
     result = CliRunner().invoke(
         cli,
         [
@@ -188,11 +188,21 @@ def test_cli_sbom_honours_an_explicit_cve_source(monkeypatch, tmp_path):
 
     calls: list[str] = []
 
-    def fake_nvd(component, api_key=None, **_kwargs):
-        calls.append(component.name)
-        return [RECORD]
+    class NvdStub:
+        def __init__(self, **_kwargs):
+            pass
 
-    monkeypatch.setattr(cli_module, "nvd_lookup", fake_nvd)
+        def lookup(self, component):
+            calls.append(component.name)
+            return [RECORD]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
+
+    monkeypatch.setattr(cli_module, "NvdClient", NvdStub)
     result = CliRunner().invoke(
         cli,
         [

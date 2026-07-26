@@ -65,10 +65,22 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path, stub_
 
     calls = {"epss": 0, "kev": 0}
 
-    def nvd_stub(component, api_key=None):
-        if component.name != "xz":
-            return []
-        return [CveRecord("CVE-2024-3094", 10.0, "xz backdoor")]
+    class NvdStub:
+        """Stands in for the scan-scoped NVD client."""
+
+        def __init__(self, **_kwargs):
+            pass
+
+        def lookup(self, component):
+            if component.name != "xz":
+                return []
+            return [CveRecord("CVE-2024-3094", 10.0, "xz backdoor")]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return None
 
     def epss_stub(records):
         calls["epss"] += 1
@@ -82,7 +94,7 @@ def test_cli_demo_applies_threat_intelligence_flags(monkeypatch, tmp_path, stub_
     # inline StubRouter context-manager class previously defined here.
     stub_router_factory()
 
-    monkeypatch.setattr(cli_module, "nvd_lookup", nvd_stub)
+    monkeypatch.setattr(cli_module, "NvdClient", NvdStub)
     monkeypatch.setattr(cli_module, "enrich_with_epss", epss_stub)
     monkeypatch.setattr(cli_module, "enrich_with_kev", kev_stub)
 

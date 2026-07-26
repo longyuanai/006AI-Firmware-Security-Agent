@@ -136,7 +136,7 @@ def test_scan_with_mock_source_does_not_call_nvd(monkeypatch, tmp_path, stub_rou
     def fail(*_args, **_kwargs):
         raise AssertionError("NVD must not be queried for --cve-source mock")
 
-    monkeypatch.setattr(cli_module, "nvd_lookup", fail)
+    monkeypatch.setattr(cli_module, "NvdClient", fail)
     report = tmp_path / "report.md"
     result = CliRunner().invoke(
         cli,

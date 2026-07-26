@@ -12,8 +12,8 @@ import asyncio
 import os
 import json
 import sys
-from collections.abc import Callable, Iterable
-from functools import partial
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import click
@@ -37,7 +37,7 @@ from ai_firmware_agent.gateway_envelope import (
     scan_payload_to_envelope,
 )
 from ai_firmware_agent.normalizer import Component
-from ai_firmware_agent.nvd import nvd_lookup
+from ai_firmware_agent.nvd import NvdClient
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
 from ai_firmware_agent.reporter import render_markdown
 from ai_firmware_agent.sbom import write_cyclonedx_bom
@@ -48,18 +48,26 @@ console = Console()
 CVE_SOURCES = ("nvd", "local", "mock")
 
 
+@contextmanager
 def _lookup_provider(
     source: str,
     *,
     nvd_api_key: str | None,
     db_path: Path | None = None,
-) -> Callable[[Component], list[CveRecord]]:
-    """Resolve the ``--cve-source`` choice to an analyzer lookup callable."""
+) -> Iterator[Callable[[Component], list[CveRecord]]]:
+    """Resolve ``--cve-source`` to a lookup callable for one whole scan.
+
+    The NVD provider is scoped rather than per-component so that pacing,
+    caching and the HTTP connection are shared across the inventory.
+    """
     if source == "local":
-        return local_db_lookup(db_path=db_path)
+        yield local_db_lookup(db_path=db_path)
+        return
     if source == "mock":
-        return mock_lookup
-    return partial(nvd_lookup, api_key=nvd_api_key)
+        yield mock_lookup
+        return
+    with NvdClient(api_key=nvd_api_key) as nvd:
+        yield nvd.lookup
 
 
 def _reenrich(
@@ -101,12 +109,12 @@ def _sbom_vulnerabilities(
         is not ParameterSource.DEFAULT
     )
     source = cve_source if explicit else "mock"
-    lookup = _lookup_provider(source, nvd_api_key=nvd_api_key)
-    return [
-        (component, record)
-        for component in components
-        for record in lookup(component)
-    ]
+    with _lookup_provider(source, nvd_api_key=nvd_api_key) as lookup:
+        return [
+            (component, record)
+            for component in components
+            for record in lookup(component)
+        ]
 
 
 @click.group()
@@ -334,10 +342,8 @@ def scan(
         "mock": "bundled mock CVE data",
     }
     console.print(f"[bold]Matching[/bold] {sources[cve_source]} ...")
-    matches = match_components(
-        parsed,
-        lookup_fn=_lookup_provider(cve_source, nvd_api_key=nvd_api_key),
-    )
+    with _lookup_provider(cve_source, nvd_api_key=nvd_api_key) as lookup:
+        matches = match_components(parsed, lookup_fn=lookup)
     console.print(f"  [green]{len(matches)}[/green] vulnerable components")
     if cve_source == "local" and not matches:
         console.print(

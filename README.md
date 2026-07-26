@@ -35,6 +35,12 @@ firmware.tar.gz ──► Parser ──► Component[*] ──► CVE DB lookup
 - **CVE providers** are selected with `--cve-source`: `nvd` (default, live
   NVD 2.0 API), `local` (the offline SQLite cache described below), or
   `mock` (bundled data only).
+- **NVD requests are paced** to the documented limit — 5 per 30 seconds
+  without an API key, 50 with one — and one client, with its cache and
+  connection, is shared across the whole inventory. A scan issues one request
+  per distinct component, so the 135-package OpenWrt sample takes about 13
+  minutes unauthenticated. Set `NVD_API_KEY`, or use `--cve-source local`,
+  when scanning inventories of that size.
 - **CVE fallback** is a hard-coded `mock_lookup()` covering 7 known
   packages (busybox, openssl, openssh, xz, lighttpd, dropbear, kernel).
   NVD failures use this local data so scans remain available offline.
