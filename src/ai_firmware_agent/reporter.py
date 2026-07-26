@@ -64,8 +64,18 @@ def render_markdown(
         "|-----------|---------|--------|-----------|-------|------------|"
         "----------|-----|------|"
     )
+    # Identity first, so a match always lands on the exact component it was
+    # built from; then fall back to name@version, so a component that is only
+    # value-equal (a duplicate entry, or an inventory rebuilt by the caller)
+    # still reports its CVEs instead of rendering an empty row. Building both
+    # maps once also drops the per-row linear scan this used to do.
+    by_identity = {id(item.component): item for item in matches}
+    by_key: dict[tuple[str, str], ComponentMatch] = {}
+    for item in matches:
+        by_key.setdefault((item.component.name, item.component.version), item)
+
     for c in components:
-        match = next((m for m in matches if m.component is c), None)
+        match = by_identity.get(id(c)) or by_key.get((c.name, c.version))
         if match and match.cves:
             worst = match.max_cvss
             prisk = match.prisk

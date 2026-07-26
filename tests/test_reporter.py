@@ -89,3 +89,45 @@ def test_render_includes_narrative_section():
 def _r(components, matches, narratives):
     from ai_firmware_agent.reporter import render_markdown
     return render_markdown(components, matches, narratives, source_path="test.tar.gz")
+
+
+def test_inventory_table_renders_enrichment_shaped_matches():
+    """Matches as cli._reenrich produces them: new CveRecords, same Component."""
+    from dataclasses import replace
+
+    from ai_firmware_agent.reporter import render_markdown
+
+    component = Component(name="lighttpd", version="1.4.50", category="web_server")
+    record = CveRecord(cve="CVE-2018-19052", cvss=9.8, summary="traversal")
+    # What cli._reenrich produces: a new ComponentMatch holding new CveRecords.
+    enriched = ComponentMatch(
+        component=component,
+        cves=[replace(record, epss=0.5, kev=True)],
+    )
+
+    report = render_markdown([component], [enriched], [])
+
+    row = next(
+        line for line in report.splitlines() if line.startswith("| lighttpd ")
+    )
+    assert "CVE-2018-19052" in row
+    assert "| 9.8 |" in row
+    assert "| yes |" in row
+
+
+def test_value_equal_components_both_report_their_cves():
+    """A duplicate entry used to render an empty row: only one object matched."""
+    from ai_firmware_agent.reporter import render_markdown
+
+    first = Component(name="busybox", version="1.36.1")
+    second = Component(name="busybox", version="1.36.1")
+    match = ComponentMatch(
+        component=first,
+        cves=[CveRecord(cve="CVE-2023-39810", cvss=7.5, summary="awk")],
+    )
+
+    report = render_markdown([first, second], [match], [])
+
+    rows = [line for line in report.splitlines() if line.startswith("| busybox ")]
+    assert len(rows) == 2
+    assert all("CVE-2023-39810" in row for row in rows)
