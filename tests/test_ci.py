@@ -43,3 +43,14 @@ def test_ci_installs_squashfs_tools_on_linux():
     install = next(step for step in steps if step["name"] == "Install squashfs tools")
     assert install["if"] == "runner.os == 'Linux'"
     assert "squashfs-tools" in install["run"]
+
+
+def test_ci_audits_dependencies_on_linux():
+    """A security scanner must not ship known-vulnerable dependencies."""
+    steps = _workflow()["jobs"]["quality"]["steps"]
+    audit = next(
+        step for step in steps if step.get("name") == "Audit dependencies"
+    )
+    assert audit["if"] == "runner.os == 'Linux'"
+    assert "pip_audit" in audit["run"]
+    assert "--strict" in audit["run"]

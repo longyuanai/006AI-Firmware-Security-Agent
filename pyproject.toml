@@ -6,6 +6,8 @@ authors = ["longyuanai"]
 license = "MIT"
 readme = "README.md"
 packages = [{ include = "ai_firmware_agent", from = "src" }]
+# PEP 561: ship the inline types mypy already enforces on this source.
+include = [{ path = "src/ai_firmware_agent/py.typed", format = ["sdist", "wheel"] }]
 
 [tool.poetry.dependencies]
 python = "^3.11"

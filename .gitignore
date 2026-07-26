@@ -14,3 +14,4 @@ venv/
 src/ai_firmware_agent/cve_db/data/*.db
 *.tar.gz
 !samples/*.tar.gz
+requirements-audit.txt

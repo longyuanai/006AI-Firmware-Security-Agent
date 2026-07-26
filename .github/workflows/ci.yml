@@ -66,3 +66,13 @@ jobs:
         env:
           MPLCONFIGDIR: .mplconfig
         run: poetry run pytest --basetemp=.pytest-tmp
+
+      # A security scanner should not ship known-vulnerable dependencies of
+      # its own. Linux only: the dependency set does not vary by runner.
+      - name: Audit dependencies
+        if: runner.os == 'Linux'
+        working-directory: 006AI-Firmware-Security-Agent
+        run: |
+          python -m pip install pip-audit
+          poetry run python -m pip freeze --exclude-editable > requirements-audit.txt
+          python -m pip_audit --requirement requirements-audit.txt --strict
