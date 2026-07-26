@@ -123,3 +123,25 @@ def test_importing_the_package_does_not_pull_in_the_gateway_layer():
         check=False,
     )
     assert completed.returncode == 0, completed.stderr
+
+
+def test_the_product_version_has_a_single_source():
+    """User-Agent strings and the SBOM tool block used to drift apart."""
+    import tomllib
+
+    from ai_firmware_agent._version import USER_AGENT, __version__
+
+    pyproject = tomllib.loads(
+        (Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    assert pyproject["tool"]["poetry"]["version"] == __version__
+    assert USER_AGENT.endswith(__version__)
+    assert ai_firmware_agent.__version__ == __version__
+
+    hardcoded = [
+        source.name
+        for source in SRC.rglob("*.py")
+        if "ai-firmware-security-agent/" in source.read_text(encoding="utf-8")
+        and source.name != "_version.py"
+    ]
+    assert hardcoded == [], f"hardcoded user agent in {hardcoded}"

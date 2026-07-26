@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from ai_firmware_agent._version import USER_AGENT
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.normalizer import Component
 
@@ -93,7 +94,7 @@ def nvd_lookup(
 ) -> list[CveRecord]:
     """Query NVD for a component and fall back to ``mock_lookup`` on failure."""
     headers = {
-        "User-Agent": "ai-firmware-security-agent/0.1",
+        "User-Agent": USER_AGENT,
     }
     resolved_api_key = api_key or os.getenv("NVD_API_KEY")
     if resolved_api_key:

@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from ai_firmware_agent._version import USER_AGENT
 from ai_firmware_agent.cve_db import CveRecord
 
 KEV_CATALOG_URL = (
@@ -45,7 +46,7 @@ def fetch_kev_catalog(
     try:
         response = http.get(
             KEV_CATALOG_URL,
-            headers={"User-Agent": "ai-firmware-security-agent/0.1"},
+            headers={"User-Agent": USER_AGENT},
         )
         response.raise_for_status()
         return _parse_catalog(response.json())

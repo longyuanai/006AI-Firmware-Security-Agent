@@ -15,6 +15,7 @@ from typing import Any
 
 import httpx
 
+from ai_firmware_agent._version import USER_AGENT
 from ai_firmware_agent.cve_db.query import PACKAGE_DIR, EmbeddedCVEDatabase
 from ai_firmware_agent.cve_db.version import parse_cpe
 
@@ -257,7 +258,7 @@ async def sync_database(
     api_key = os.getenv("NVD_API_KEY")
     limit = 50 if api_key else 5
     delay = 30.0 / limit
-    headers = {"User-Agent": "ai-firmware-security-agent/0.7"}
+    headers = {"User-Agent": USER_AGENT}
     if api_key:
         headers["apiKey"] = api_key
 

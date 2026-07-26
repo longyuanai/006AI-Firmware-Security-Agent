@@ -8,6 +8,7 @@ business-language risk narrative.
 
 from typing import TYPE_CHECKING, Any
 
+from ai_firmware_agent._version import __version__
 from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
 from ai_firmware_agent.attack_chain import AttackChain, reconstruct_attack_chain
 from ai_firmware_agent.charts import render_vulnerability_pie
@@ -25,8 +26,6 @@ from ai_firmware_agent.zeroday import KnownCvePattern, predict_zero_days
 
 if TYPE_CHECKING:
     from ai_firmware_agent.adapter import FirmwareProductAdapter
-
-__version__ = "0.1.0"
 
 
 def __getattr__(name: str) -> Any:
