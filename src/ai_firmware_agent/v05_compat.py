@@ -35,7 +35,21 @@ else:
 
         V05_NATIVE = True
     except ImportError:
-        V05_NATIVE = False
+        try:
+            # Some shared-core builds export the section 9 types only from the
+            # submodule. Resolving both ways keeps one Finding identity across
+            # this product, so `is` comparisons against the shared enums hold.
+            from shared_llm_core.finding import (
+                Finding,
+                FindingSeverity,
+                FindingSource,
+            )
+
+            V05_NATIVE = True
+        except ImportError:
+            V05_NATIVE = False
+
+    if not V05_NATIVE:
 
         class FindingSource(str, Enum):  # noqa: UP042
             """Frozen v0.5 §9.3 source values."""

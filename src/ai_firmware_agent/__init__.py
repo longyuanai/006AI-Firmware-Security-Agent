@@ -6,8 +6,9 @@ local mock CVE database, then asks the LLM (via shared-llm-core) for a
 business-language risk narrative.
 """
 
+from typing import TYPE_CHECKING, Any
+
 from ai_firmware_agent.analyzer import enrich_top_components, ComponentNarrative
-from ai_firmware_agent.adapter import FirmwareProductAdapter
 from ai_firmware_agent.attack_chain import AttackChain, reconstruct_attack_chain
 from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
@@ -22,7 +23,24 @@ from ai_firmware_agent.scoring import PRiskScore, rank_matches, score_component
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 from ai_firmware_agent.zeroday import KnownCvePattern, predict_zero_days
 
+if TYPE_CHECKING:
+    from ai_firmware_agent.adapter import FirmwareProductAdapter
+
 __version__ = "0.1.0"
+
+
+def __getattr__(name: str) -> Any:
+    """Load the section 10 adapter lazily.
+
+    ``adapter`` is the one module that needs the shared gateway layer. Import
+    it eagerly and a shared-core build without that layer breaks every import
+    of this package, including the CLI, which does not use the adapter at all.
+    """
+    if name == "FirmwareProductAdapter":
+        from ai_firmware_agent.adapter import FirmwareProductAdapter
+
+        return FirmwareProductAdapter
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "Component",

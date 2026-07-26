@@ -5,8 +5,14 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any
 
-from shared_llm_core.finding import Finding, FindingSeverity, FindingSource
 from shared_llm_core.gateway import ProductAdapter
+
+from ai_firmware_agent.v05_compat import (
+    Finding,
+    FindingSeverity,
+    FindingSource,
+    new_finding,
+)
 
 
 class FirmwareProductAdapter(ProductAdapter):
@@ -18,9 +24,7 @@ class FirmwareProductAdapter(ProductAdapter):
         firmware = payload.get("firmware_path") or payload.get("firmware_url")
         if not firmware:
             return
-        yield Finding(
-            id="",
-            source=self.source,
+        yield new_finding(
             severity=FindingSeverity.MEDIUM,
             confidence=0.7,
             title=f"firmware scan of {firmware}",

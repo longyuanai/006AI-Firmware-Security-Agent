@@ -8,13 +8,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
-from shared_llm_core.finding import Finding, FindingSeverity, FindingSource
 
 from ai_firmware_agent.binwalk_runner import BinwalkRunner, ExtractResult
 from ai_firmware_agent.cve_db import CVEEntry, EmbeddedCVEDatabase
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers.binwalk import extract_components
 from ai_firmware_agent.parsers.mock import parse_firmware_file
+from ai_firmware_agent.v05_compat import Finding, FindingSeverity, new_finding
 
 
 @dataclass
@@ -67,9 +67,7 @@ class FirmwareScanner:
             for entry in entries:
                 score = entry.cvss_v3 or 0.0
                 result.findings.append(
-                    Finding(
-                        id="",
-                        source=FindingSource.FIRMWARE,
+                    new_finding(
                         severity=self._severity(entry),
                         confidence=(
                             0.9 if entry.in_known_exploited else 0.75
