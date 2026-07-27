@@ -1,0 +1,14 @@
+Package: busybox
+Version: 1:1.36.1-r2
+Section: base
+Architecture: mips_24kc
+Status: install user installed
+
+Package: dropbear
+Version: 2022.82-5
+Section: net
+Status: install user installed
+
+Package: removed-package
+Version: 1.0-1
+Status: deinstall ok not-installed

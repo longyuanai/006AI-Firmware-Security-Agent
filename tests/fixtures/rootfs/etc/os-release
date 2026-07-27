@@ -1,0 +1,5 @@
+NAME="OpenWrt"
+VERSION="23.05.5"
+ID=openwrt
+VERSION_ID="23.05.5"
+HOME_URL="https://openwrt.org/"

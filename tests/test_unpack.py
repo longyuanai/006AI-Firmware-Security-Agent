@@ -66,7 +66,7 @@ def test_unpack_reports_missing_tools_without_crashing_pipeline(tmp_path):
     def runner(command, **kwargs):
         raise FileNotFoundError(command[0])
 
-    with pytest.raises(FirmwareUnpackError, match="No firmware manifest"):
+    with pytest.raises(FirmwareUnpackError, match="No firmware inventory"):
         unpack_firmware(firmware, runner=runner)
 
 
@@ -77,7 +77,7 @@ def test_unpack_rejects_image_without_manifest(tmp_path):
     def runner(command, **kwargs):
         return subprocess.CompletedProcess(command, 0, "", "")
 
-    with pytest.raises(FirmwareUnpackError, match="No firmware manifest"):
+    with pytest.raises(FirmwareUnpackError, match="No firmware inventory"):
         unpack_firmware(firmware, runner=runner)
 
 

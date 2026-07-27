@@ -7,6 +7,7 @@ import tempfile
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
+from ai_firmware_agent.detectors import detect_in_tree
 from ai_firmware_agent.extraction import (
     MAX_EXTRACTED_BYTES,
     MAX_EXTRACTED_FILES,
@@ -71,11 +72,20 @@ def _manifest_paths(root: Path) -> list[Path]:
 
 
 def _components_from_tree(root: Path) -> list[Component] | None:
+    """Return an inventory for an extracted tree, or ``None`` if there is none.
+
+    A ``manifest.yml`` is the fixture format and wins when present. Real
+    firmware has none, so the detectors read the rootfs itself. ``None`` still
+    means "nothing here", which is what drives the SquashFS fallback.
+    """
     paths = _manifest_paths(root)
-    if not paths:
-        return None
-    raw = paths[0].read_text(encoding="utf-8", errors="replace")
-    return components_from_manifest(raw)
+    if paths:
+        raw = paths[0].read_text(encoding="utf-8", errors="replace")
+        components = components_from_manifest(raw)
+        if components:
+            return components
+    detected = detect_in_tree(root)
+    return detected or None
 
 
 def _is_squashfs(path: Path) -> bool:
@@ -171,5 +181,7 @@ def unpack_firmware(
 
     detail = "; ".join(dict.fromkeys(errors))
     if detail:
-        raise FirmwareUnpackError(f"No firmware manifest could be extracted ({detail})")
-    raise FirmwareUnpackError("No firmware manifest could be extracted")
+        raise FirmwareUnpackError(
+            f"No firmware inventory could be extracted ({detail})"
+        )
+    raise FirmwareUnpackError("No firmware inventory could be extracted")

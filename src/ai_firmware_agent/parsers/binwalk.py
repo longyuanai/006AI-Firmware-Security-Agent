@@ -6,6 +6,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from ai_firmware_agent.binwalk_runner import BinwalkRunner, ExtractResult
+from ai_firmware_agent.detectors import detect_in_tree
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers.mock import components_from_manifest
 from ai_firmware_agent.extraction import (
@@ -39,7 +40,8 @@ def parse_binwalk_result(result: ExtractResult) -> list[Component]:
         )
         if components:
             return components
-    return []
+    # Real firmware ships no manifest, so read the extracted rootfs itself.
+    return detect_in_tree(root)
 
 
 async def extract_components(
