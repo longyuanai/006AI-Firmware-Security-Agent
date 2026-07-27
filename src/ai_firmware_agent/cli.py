@@ -32,6 +32,7 @@ from ai_firmware_agent.charts import render_vulnerability_pie
 from ai_firmware_agent.cve_db import CveRecord, EmbeddedCVEDatabase, local_db_lookup, mock_lookup
 from ai_firmware_agent.cve_db.sync import sync_database
 from ai_firmware_agent.kev import enrich_with_kev
+from ai_firmware_agent.html_report import render_html
 from ai_firmware_agent.gateway_envelope import (
     components_from_payload,
     scan_payload_to_envelope,
@@ -210,6 +211,14 @@ def cve_db_status(db_path: Path | None) -> None:
     show_default=True,
     help="CVE provider: NVD API, the offline local cache, or bundled mock data.",
 )
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("markdown", "html")),
+    default="markdown",
+    show_default=True,
+    help="Report format. HTML is a single self-contained file.",
+)
 @click.option("--top-n", default=3, show_default=True, type=int)
 @click.option("--provider", "-p", default="local", show_default=True)
 @click.option("--demo", is_flag=True, help="Use a built-in synthetic firmware instead of --input.")
@@ -226,6 +235,7 @@ def scan(
     json_output: bool,
     sbom_path: Path | None,
     cve_source: str,
+    output_format: str,
     top_n: int,
     provider: str,
     demo: bool,
@@ -369,6 +379,7 @@ def scan(
         narratives = enrich_top_components(matches, router, top_n=top_n)
 
     chart_reference = ""
+    chart_file: Path | None = None
     if output_path != "-":
         report_path = Path(output_path)
         chart_path = report_path.with_name(
@@ -376,16 +387,27 @@ def scan(
         )
         rendered_chart = render_vulnerability_pie(matches, chart_path)
         if rendered_chart is not None:
+            chart_file = rendered_chart
             chart_reference = rendered_chart.name
             console.print(f"[green]Wrote[/green] {rendered_chart}")
 
-    report = render_markdown(
-        parsed,
-        matches,
-        narratives,
-        source_path=source,
-        chart_path=chart_reference,
-    )
+    if output_format == "html":
+        # The chart is inlined as a data URI, so the HTML stays one file.
+        report = render_html(
+            parsed,
+            matches,
+            narratives,
+            source_path=source,
+            chart_path=chart_file,
+        )
+    else:
+        report = render_markdown(
+            parsed,
+            matches,
+            narratives,
+            source_path=source,
+            chart_path=chart_reference,
+        )
     if output_path == "-":
         sys.stdout.write(report)
     else:

@@ -1,0 +1,199 @@
+{# Autoescaping is on. Never apply |safe to scan data: every component name,
+   version and CVE description comes out of untrusted firmware. #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firmware Security Report</title>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1f2937; --muted: #6b7280; --line: #e5e7eb;
+    --card: #f9fafb; --critical: #991b1b; --high: #dc2626;
+    --medium: #f59e0b; --low: #3b82f6; --unscored: #94a3b8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a; --fg: #e2e8f0; --muted: #94a3b8; --line: #1e293b;
+      --card: #1e293b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 2rem 1rem; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 60rem; margin: 0 auto; }
+  h1 { font-size: 1.75rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.25rem; margin: 2.5rem 0 .75rem;
+       padding-bottom: .35rem; border-bottom: 1px solid var(--line); }
+  h3 { font-size: 1.05rem; margin: 1.5rem 0 .5rem; }
+  .meta { color: var(--muted); font-size: .875rem; margin: 0 0 .25rem; }
+  .cards { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.25rem 0; }
+  .card {
+    flex: 1 1 8rem; background: var(--card); border: 1px solid var(--line);
+    border-radius: .5rem; padding: .75rem 1rem;
+  }
+  .card .label { color: var(--muted); font-size: .75rem;
+                 text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 1.5rem; font-weight: 600; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .875rem; }
+  th, td { text-align: left; padding: .5rem .6rem;
+           border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: .75rem;
+       text-transform: uppercase; letter-spacing: .04em; }
+  td.wrap { white-space: normal; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+         font-size: .85em; }
+  .pill {
+    display: inline-block; padding: .1rem .5rem; border-radius: 999px;
+    font-size: .75rem; font-weight: 600; color: #fff;
+  }
+  .pill.critical { background: var(--critical); }
+  .pill.high { background: var(--high); }
+  .pill.medium { background: var(--medium); color: #1f2937; }
+  .pill.low { background: var(--low); }
+  .pill.unscored { background: var(--unscored); }
+  .finding { background: var(--card); border: 1px solid var(--line);
+             border-radius: .5rem; padding: 1rem 1.25rem; margin: 1rem 0; }
+  .finding dt { color: var(--muted); font-size: .75rem;
+                text-transform: uppercase; letter-spacing: .04em;
+                margin-top: .75rem; }
+  .finding dd { margin: .15rem 0 0; }
+  img { max-width: 100%; height: auto; }
+  footer { color: var(--muted); font-size: .8rem; margin-top: 3rem;
+           padding-top: .75rem; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Firmware Security Report</h1>
+  <p class="meta">Generated at {{ generated_at }}</p>
+  {% if source_path %}
+  <p class="meta">Source: <code>{{ source_path }}</code></p>
+  {% endif %}
+
+  <h2>Summary</h2>
+  <div class="cards">
+    <div class="card">
+      <div class="label">Components</div>
+      <div class="value">{{ component_count }}</div>
+    </div>
+    <div class="card">
+      <div class="label">With known CVEs</div>
+      <div class="value">{{ vulnerable_count }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Worst CVSS</div>
+      <div class="value">{{ "%.1f"|format(worst_cvss) }}</div>
+    </div>
+    <div class="card">
+      <div class="label">KEV listed</div>
+      <div class="value">{{ kev_count }}</div>
+    </div>
+    <div class="card">
+      <div class="label">Highest PRisk</div>
+      <div class="value">{{ "%.3f"|format(highest_prisk) }}</div>
+    </div>
+  </div>
+
+  {% if chart_data_uri %}
+  <h2>Vulnerability Distribution</h2>
+  <img src="{{ chart_data_uri }}" alt="Vulnerability distribution by CVSS severity">
+  {% elif distribution %}
+  <h2>Vulnerability Distribution</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Severity</th><th>CVEs</th></tr></thead>
+      <tbody>
+        {% for severity, count in distribution.items() %}
+        <tr><td>{{ severity }}</td><td>{{ count }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <h2>Top Risks (LLM-enriched)</h2>
+  {% if not narratives %}
+  <p class="meta">No LLM enrichment produced.</p>
+  {% endif %}
+  {% for narrative in narratives %}
+  <div class="finding">
+    <h3>{{ narrative.name }} {{ narrative.version }}</h3>
+    <p class="meta">
+      vendor: {{ narrative.vendor }} &middot;
+      PRisk {{ "%.3f"|format(narrative.prisk) }}
+    </p>
+    <dl>
+      <dt>CVEs</dt>
+      <dd>
+        {% for record in narrative.cves %}
+        <span class="pill {{ record.severity }}">{{ record.cve }}</span>
+        <span class="meta">
+          CVSS {{ "%.1f"|format(record.cvss) }},
+          EPSS {{ "%.4f"|format(record.epss) }},
+          KEV {{ "yes" if record.kev else "no" }}
+        </span>{% if not loop.last %}<br>{% endif %}
+        {% endfor %}
+      </dd>
+      <dt>Business impact</dt>
+      <dd>{{ narrative.business_impact }}</dd>
+      <dt>Remediation</dt>
+      <dd>{{ narrative.remediation_summary }}</dd>
+      <dt>Rationale</dt>
+      <dd>{{ narrative.rationale }}</dd>
+    </dl>
+  </div>
+  {% endfor %}
+
+  <h2>Full Component Inventory</h2>
+  <div class="scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>Component</th><th>Version</th><th>Vendor</th>
+          <th>Detector</th><th>Evidence</th>
+          <th>CVEs</th><th>PRisk</th><th>Worst CVSS</th>
+          <th>Max EPSS</th><th>KEV</th><th>Identifiers</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.name }}</td>
+          <td>{{ row.version }}</td>
+          <td>{{ row.vendor }}</td>
+          <td>{{ row.detector }}</td>
+          <td><code>{{ row.evidence }}</code></td>
+          <td>{{ row.cve_count }}</td>
+          <td>{{ "%.3f"|format(row.prisk) }}</td>
+          <td>
+            {% if row.cve_count %}
+            <span class="pill {{ row.severity }}">
+              {{ "%.1f"|format(row.worst_cvss) }}
+            </span>
+            {% else %}-{% endif %}
+          </td>
+          <td>{{ "%.4f"|format(row.max_epss) }}</td>
+          <td>{{ "yes" if row.kev else "no" }}</td>
+          <td class="wrap">
+            {% if row.cves %}<code>{{ row.cves|join(", ") }}</code>
+            {% else %}-{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    ai-firmware-agent {{ tool_version }} &middot;
+    component evidence is recorded per row; binary-banner detections are
+    heuristic and worth confirming before acting on them.
+  </footer>
+</main>
+</body>
+</html>

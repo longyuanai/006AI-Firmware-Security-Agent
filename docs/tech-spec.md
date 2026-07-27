@@ -36,7 +36,7 @@ IoT 厂商出货百万台路由器/摄像头/智能门锁,固件里塞了 BusyBo
 | Must | Markdown 报告 | CLI 输出 |
 | Should | 真实固件解包 | binwalk + squashfs ✅ |
 | Should | EPSS / KEV | 真实威胁情报 |
-| Should | HTML 报告 | jinja2 + CSS —— **未做**;jinja2 已在依赖里但全仓零引用 |
+| Should | HTML 报告 | jinja2 + CSS ✅ 已完成(`html_report.py`,自动转义 + 图表内联) |
 | Should | 报告图表 | matplotlib PNG |
 | Should | Dockerfile | CI/CD |
 | Could | CycloneDX 输出 | 标准化 SBOM ✅ 已完成(含 VEX) |
@@ -199,6 +199,16 @@ def render_markdown(components, matches, narratives) -> str: ...
 ```
 
 CLI 命令 `firmware-agent scan -i firmware.bin -o report.md`,带 `--demo` 用 mock 数据。
+
+### 5.6a HTML 报告 (`html_report.py` + `templates/report.html.j2`)
+
+`--format {markdown,html}`,默认 markdown。HTML 是单文件自包含产物——
+图表内联成 base64 data URI,不额外产出文件。
+
+**转义是硬约束,不是可选项**:组件名、版本、CVE 描述全部来自不可信固件。
+Jinja2 environment 开启 autoescape,模板**禁止**对扫描数据用 `|safe`。
+`tests/test_html_report.py` 有多条用例验证脚本标签、属性逃逸、事件处理器
+都被转义,不能作为回归红线放松。
 
 ### 5.7 v0.5 共享契约边界 (`v05_compat.py` / `adapter.py` / `gateway_envelope.py`)
 

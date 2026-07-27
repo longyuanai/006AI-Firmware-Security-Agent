@@ -205,6 +205,19 @@ All inputs are clamped to `0..1`. `Component.extra.exploit` and
 known-exploitation evidence and a documented component-category mapping supplies
 the exposure estimate.
 
+## HTML report
+
+```bash
+python -m ai_firmware_agent.cli scan --demo --format html -o report.html
+```
+
+Renders the same content as the Markdown report as one self-contained HTML
+file — the vulnerability chart is inlined as a base64 data URI, so nothing
+else needs to ship alongside it. Every value that originates in firmware
+(component names, versions, CVE descriptions) is autoescaped; the template
+must never apply Jinja's `|safe` filter to scan data. `--format markdown`
+remains the default.
+
 ## Report chart
 
 When `--output report.md` is used, the CLI also writes
