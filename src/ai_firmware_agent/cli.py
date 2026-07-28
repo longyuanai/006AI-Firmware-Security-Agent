@@ -37,10 +37,11 @@ from ai_firmware_agent.gateway_envelope import (
     components_from_payload,
     scan_payload_to_envelope,
 )
+from ai_firmware_agent.diff import diff_components, diff_vulnerabilities
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import NvdClient
 from ai_firmware_agent.parsers import make_demo_firmware, parse_firmware_file
-from ai_firmware_agent.reporter import render_markdown
+from ai_firmware_agent.reporter import render_diff_markdown, render_markdown
 from ai_firmware_agent.sbom import write_cyclonedx_bom
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
 
@@ -116,6 +117,23 @@ def _sbom_vulnerabilities(
             for component in components
             for record in lookup(component)
         ]
+
+
+def _parse_input_file(input_path: str) -> list[Component]:
+    """Parse one firmware/manifest file the same way for every command.
+
+    ``.bin`` goes through the binwalk/unsquashfs extraction path; anything
+    else is treated as the manifest-bearing archive fixture format. Matches
+    ``scan``'s original inline behavior exactly: only ``FirmwareUnpackError``
+    is translated to a clean CLI error, so a corrupted non-``.bin`` archive
+    still surfaces as an uncaught exception, as it always has.
+    """
+    try:
+        if Path(input_path).suffix.lower() == ".bin":
+            return unpack_firmware(input_path)
+        return parse_firmware_file(input_path)
+    except FirmwareUnpackError as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 @click.group()
@@ -331,13 +349,7 @@ def scan(
         source = "<demo>"
     else:
         console.print(f"[bold]Parsing[/bold] {input_path} ...")
-        try:
-            if Path(input_path).suffix.lower() == ".bin":  # type: ignore[arg-type]
-                parsed = unpack_firmware(input_path)  # type: ignore[arg-type]
-            else:
-                parsed = parse_firmware_file(input_path)  # type: ignore[arg-type]
-        except FirmwareUnpackError as exc:
-            raise click.ClickException(str(exc)) from exc
+        parsed = _parse_input_file(input_path)  # type: ignore[arg-type]
         source = input_path or "<unknown>"
 
     console.print(f"  [green]{len(parsed)}[/green] components inventoried")
@@ -408,6 +420,79 @@ def scan(
             source_path=source,
             chart_path=chart_reference,
         )
+    if output_path == "-":
+        sys.stdout.write(report)
+    else:
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        console.print(f"[green]Wrote[/green] {output_path}")
+
+
+@cli.command()
+@click.option("--old", "old_path", required=True, type=str, help="Older firmware/manifest file.")
+@click.option("--new", "new_path", required=True, type=str, help="Newer firmware/manifest file.")
+@click.option("--output", "-o", "output_path", default="-", type=click.Path())
+@click.option(
+    "--cve-source",
+    type=click.Choice(CVE_SOURCES),
+    default="mock",
+    show_default=True,
+    help="CVE provider used to check for vulnerabilities surviving the change.",
+)
+@click.option(
+    "--nvd-api-key",
+    envvar="NVD_API_KEY",
+    help="NVD API key (or set NVD_API_KEY), used only with --cve-source nvd.",
+)
+def diff(
+    old_path: str,
+    new_path: str,
+    output_path: str,
+    cve_source: str,
+    nvd_api_key: str | None,
+) -> None:
+    """Compare two firmware/manifest inputs and report what changed.
+
+    Flags components that were added, removed, upgraded, or downgraded, and
+    CVEs that matched the component in both inventories — the version
+    changed but the CVE's affected range may not have been left behind.
+    """
+    for label, path in (("--old", old_path), ("--new", new_path)):
+        if not Path(path).is_file():
+            raise click.BadParameter(f"Path does not exist: {path}", param_hint=label)
+
+    console.print(f"[bold]Parsing[/bold] old: {old_path} ...")
+    old_components = _parse_input_file(old_path)
+    console.print(f"  [green]{len(old_components)}[/green] components")
+    console.print(f"[bold]Parsing[/bold] new: {new_path} ...")
+    new_components = _parse_input_file(new_path)
+    console.print(f"  [green]{len(new_components)}[/green] components")
+
+    component_diff = diff_components(old_components, new_components)
+    console.print(
+        f"[bold]Diff[/bold]: +{len(component_diff.added)} "
+        f"-{len(component_diff.removed)} "
+        f"↑{len(component_diff.upgraded)} "
+        f"↓{len(component_diff.downgraded)}"
+    )
+
+    console.print(f"[bold]Matching[/bold] CVEs on both inventories ({cve_source}) ...")
+    with _lookup_provider(cve_source, nvd_api_key=nvd_api_key) as lookup:
+        old_matches = match_components(old_components, lookup_fn=lookup)
+        new_matches = match_components(new_components, lookup_fn=lookup)
+    persistent = diff_vulnerabilities(old_matches, new_matches)
+    if persistent:
+        console.print(
+            f"  [yellow]{len(persistent)}[/yellow] CVE(s) match in both "
+            "inventories"
+        )
+
+    report = render_diff_markdown(
+        component_diff,
+        persistent,
+        old_source=old_path,
+        new_source=new_path,
+    )
     if output_path == "-":
         sys.stdout.write(report)
     else:

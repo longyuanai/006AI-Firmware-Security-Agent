@@ -160,6 +160,27 @@ SBOM export walks the entire inventory, and the NVD provider issues one
 request per component, so it stays on the offline providers unless
 `--cve-source` is given explicitly.
 
+## Firmware diff
+
+```bash
+python -m ai_firmware_agent.cli diff --old old-firmware.bin --new new-firmware.bin -o diff.md
+```
+
+Compares two firmware or manifest inputs and reports added, removed,
+upgraded, and downgraded components, plus any CVE that matched the
+component in **both** inventories — the version string changed but the
+component may not have left the CVE's affected range, which a changelog
+will not tell you. Like `--sbom`, this walks whole inventories twice, so
+`--cve-source` defaults to `mock` rather than `nvd`; pass it explicitly to
+check against the offline cache or live NVD.
+
+Version ordering is a pragmatic comparator for embedded package versions
+(see `cve_db/version.py`), not full semver. A component versioned by
+build-date-plus-git-hash (`2023-09-01-598d9fbb`, common in OpenWrt
+packages) still gets *some* ordering, but it does not reliably correspond
+to which build is chronologically newer — treat "upgraded"/"downgraded" on
+such versions as a best-effort label, not a guarantee.
+
 ## Offline CVE cache
 
 Embedded scanning often runs on isolated networks, so NVD records for

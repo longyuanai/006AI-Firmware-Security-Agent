@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from ai_firmware_agent.analyzer import ComponentMatch, ComponentNarrative
+from ai_firmware_agent.diff import ComponentChange, FirmwareDiff, PersistentVulnerability
 
 
 def render_markdown(
@@ -94,5 +95,91 @@ def render_markdown(
             f"{max_epss:.4f} | {kev} | {cves} |"
         )
     lines.append("")
+
+    return "\n".join(lines)
+
+
+def render_diff_markdown(
+    diff: FirmwareDiff,
+    persistent_vulnerabilities: tuple[PersistentVulnerability, ...],
+    *,
+    old_source: str = "",
+    new_source: str = "",
+) -> str:
+    """Render a firmware-to-firmware component diff as Markdown."""
+    lines: list[str] = []
+    lines.append("# Firmware Diff Report")
+    lines.append("")
+    lines.append(f"_Generated at {datetime.now().isoformat(timespec='seconds')}_")
+    if old_source or new_source:
+        lines.append(f"_Old: `{old_source or '?'}` → New: `{new_source or '?'}`_")
+    lines.append("")
+
+    lines.append("## Summary")
+    lines.append("")
+    lines.append(f"- Added: **{len(diff.added)}**")
+    lines.append(f"- Removed: **{len(diff.removed)}**")
+    lines.append(f"- Upgraded: **{len(diff.upgraded)}**")
+    lines.append(f"- Downgraded: **{len(diff.downgraded)}**")
+    lines.append(f"- Changed (version order unclear): **{len(diff.changed)}**")
+    lines.append(f"- Unchanged: **{len(diff.unchanged)}**")
+    lines.append(
+        f"- CVEs matching the component in both firmwares: "
+        f"**{len(persistent_vulnerabilities)}**"
+    )
+    lines.append("")
+
+    if persistent_vulnerabilities:
+        lines.append("## Vulnerabilities That Survived the Change")
+        lines.append("")
+        lines.append(
+            "These CVEs matched the component in both the old and the new "
+            "inventory. The version changed but did not necessarily leave "
+            "the affected range — verify against the CVE's own advisory "
+            "before assuming the upgrade fixed it."
+        )
+        lines.append("")
+        lines.append("| Component | CVE | Old Version | New Version |")
+        lines.append("|-----------|-----|--------------|--------------|")
+        for item in persistent_vulnerabilities:
+            lines.append(
+                f"| {item.component} | {item.cve} | {item.old_version} | "
+                f"{item.new_version} |"
+            )
+        lines.append("")
+
+    def _section(
+        title: str,
+        changes: tuple[ComponentChange, ...],
+        columns: list[str],
+    ) -> None:
+        lines.append(f"## {title}")
+        lines.append("")
+        if not changes:
+            lines.append("_None._")
+            lines.append("")
+            return
+        lines.append(f"| {' | '.join(columns)} |")
+        lines.append(f"|{'|'.join('---' for _ in columns)}|")
+        for change in changes:
+            if len(columns) == 2:
+                version = change.new_version or change.old_version or "-"
+                lines.append(f"| {change.name} | {version} |")
+            else:
+                lines.append(
+                    f"| {change.name} | {change.old_version or '-'} | "
+                    f"{change.new_version or '-'} |"
+                )
+        lines.append("")
+
+    _section("Added", diff.added, ["Component", "Version"])
+    _section("Removed", diff.removed, ["Component", "Version"])
+    _section("Upgraded", diff.upgraded, ["Component", "Old Version", "New Version"])
+    _section("Downgraded", diff.downgraded, ["Component", "Old Version", "New Version"])
+    _section(
+        "Changed (version order unclear)",
+        diff.changed,
+        ["Component", "Old Version", "New Version"],
+    )
 
     return "\n".join(lines)

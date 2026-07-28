@@ -78,7 +78,7 @@
 ## 待派 Codex 的任务(按优先级)
 
 > 卡片格式见 [CODEX_INSTRUCTIONS.md](CODEX_INSTRUCTIONS.md)。
-> 当前基线:**329 passed / 4 skipped**,ruff + mypy 全绿。
+> 当前基线:**354 passed / 4 skipped**,ruff + mypy 全绿。
 
 | ID | 任务 | 优先级 | 阻塞点 |
 |----|------|--------|--------|
@@ -86,9 +86,8 @@
 | ~~RPT-HTML-001~~ | ~~HTML 报告~~ | done | — |
 | ~~DETECT-002~~ | ~~扩充检测器覆盖面~~ | done(部分) | RPM 暂缓,见下 |
 | ~~EVAL-001~~ | ~~评测基线与跑分脚本~~ | done(部分) | 见 `benchmarks/`,4 个指标中 2 个部分测量、2 个仍无法测 |
-| DETECT-002 | 扩充检测器覆盖面 | P2 | 无 |
-| DIFF-001 | 固件差分分析 | P3 | 无 |
-| FINGERPRINT-001 | 厂商/OEM 指纹识别 | P3 | 无 |
+| ~~DIFF-001~~ | ~~固件差分分析~~ | done | — |
+| FINGERPRINT-001 | 厂商/OEM 指纹识别 | P3 | 误报代价高,需先定准确率门槛 |
 | ENG-001 | poetry.lock + ruff format 决策 | P3 | 需先定风格 |
 
 ---
@@ -227,10 +226,27 @@ nginx 五个新 banner(全部是编译期字面量,不是猜的);新增 `detecto
 
 ---
 
-### DIFF-001 / FINGERPRINT-001 / ENG-001(P3)
+### DIFF-001 · 固件差分分析 — ✅ 已完成
 
-- **DIFF-001**:对比两个固件版本的组件清单,输出新增/删除/升级/降级,
-  并标出"升级后仍受同一 CVE 影响"的情况。依赖 EVAL-001 的语料。
+`diff.py`(`diff_components` / `diff_vulnerabilities`)+
+`reporter.render_diff_markdown` + `firmware-agent diff --old --new` 已实现。
+
+- 按组件名(大小写不敏感)对比两份清单:added / removed / upgraded /
+  downgraded / changed(版本排序不明确)/ unchanged
+- `diff_vulnerabilities` 标出"同一组件在新旧版本里都命中的 CVE"——
+  只对比调用方已经算好的两次 `match_components` 结果,不自己发起 CVE 查询
+- 和 `--sbom` 一样,`diff` 默认 `--cve-source mock`,不是 `nvd`:
+  会把两份清单各查一遍,默认打两倍限速请求不合理
+- 版本排序复用 `cve_db/version.py` 的 `version_key()`,对"日期+git-hash"
+  风格的版本号(OpenWrt 常见)只是给出某种排序,不保证对应真实新旧关系——
+  这一点在 `diff.py` 模块文档、README、tech-spec §5.12 都写了,不要只看
+  upgraded/downgraded 标签下结论
+- CLI 的 `scan` 输入解析逻辑抽成了 `_parse_input_file` 共享辅助函数,
+  行为与原来逐字一致(含"非 `.bin` 的损坏归档不会被 `FirmwareUnpackError`
+  捕获"这条边界情况),新增测试专门锁住这个不变量
+
+### FINGERPRINT-001 / ENG-001(P3)
+
 - **FINGERPRINT-001**:从 rootfs 特征(目录布局、默认配置、厂商字符串)
   推断 OEM 与设备型号。误报代价高,先定准确率门槛再做。
 - **ENG-001**:`poetry.lock` 目前**生成不了**——pyproject 用

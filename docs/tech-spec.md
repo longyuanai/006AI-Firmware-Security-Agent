@@ -41,7 +41,7 @@ IoT 厂商出货百万台路由器/摄像头/智能门锁,固件里塞了 BusyBo
 | Should | Dockerfile | CI/CD |
 | Could | CycloneDX 输出 | 标准化 SBOM ✅ 已完成(含 VEX) |
 | Could | 厂商指纹识别 | 自动识别 OEM |
-| Could | 差分分析 | 对比两个版本固件 |
+| Could | 差分分析 | 对比两个版本固件 ✅ 已完成(不含厂商指纹) |
 | Won't | 在线升级 | 推外部 OTA 系统 |
 
 ## 4. 总体架构
@@ -253,6 +253,30 @@ Docker 托管的 QEMU user-mode 跑固件 init,产出进程 / 监听端口 / §9
 背景/攻击/后果叙述 + §9 Finding。EXPLOITER 只被要求模拟逻辑路径,
 不执行固件命令、不产出可部署 exploit。
 
+### 5.12 固件差分 (`diff.py` + `reporter.render_diff_markdown`)
+
+```python
+def diff_components(old, new) -> FirmwareDiff:
+    """按名称(大小写不敏感)比对两份清单:added/removed/upgraded/
+    downgraded/changed(版本排序不明确)/unchanged"""
+
+def diff_vulnerabilities(old_matches, new_matches) -> tuple[PersistentVulnerability, ...]:
+    """两次 CVE 匹配结果的交集:同一组件在新旧版本里都命中的 CVE。
+    不做 CVE 查询,调用方要用同一个 lookup_fn 分别跑过两次 match_components"""
+```
+
+CLI:`firmware-agent diff --old OLD --new NEW [--cve-source ...] -o report.md`。
+和 `--sbom` 一样,`diff` 要把两份清单各查一遍 CVE,所以 `--cve-source`
+**默认 mock**,不是 `nvd`——避免默认情况下悄悄打两倍的限速请求。
+
+版本排序复用 `cve_db/version.py` 的 `version_key()`,那是给嵌入式包版本用的
+实用比较器,不是完整 semver 实现。OpenWrt 这类"日期+git-hash"版本号
+(`2023-09-01-598d9fbb`)仍然会得到一个排序结果,但那个顺序**不代表**真实的
+新旧关系——只有真正没有任何数字/字母的版本串(纯符号或空串)才会落到
+`changed`(排序不明确),两个都是字母/哈希的版本串会被排出一个顺序,
+即使那个顺序没有实际意义。这一点在 `diff.py` 模块文档和 README 里都写了,
+不要只看 CLI 输出的 upgraded/downgraded 标签就下结论。
+
 ## 6. 数据与模型
 
 无业务数据持久化——固件解包在临时目录,处理完删除。
@@ -341,7 +365,7 @@ $ poetry run python benchmarks/run.py --time-scan
 | **v0.1 S3** | 报告图表 + Docker + CI |
 | **v0.5** | CycloneDX SBOM 输出 ✅ |
 | v0.7 (当前) | 本地 CVE 缓存 + VEX + 真实组件检测,278 passed |
-| **v1.0** | 厂商指纹 + 差分分析 + 评测基线 |
+| **v1.0** | 厂商指纹(差分分析、评测基线已在 v0.7 完成) |
 
 ## 11. 接口契约
 
