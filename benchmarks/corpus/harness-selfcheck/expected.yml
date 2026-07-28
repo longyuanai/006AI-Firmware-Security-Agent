@@ -1,0 +1,12 @@
+# Hand-built to exercise every scoring outcome, not a real firmware sample.
+# See benchmarks/README.md before treating this fixture as ground truth.
+components:
+  - name: known-good
+    version: 1.0.0
+  - name: version-drift
+    # Deliberately does not match the rootfs's actual 2.0.0, to exercise the
+    # "detected the component but got the version wrong" scoring path.
+    version: 1.9.9
+  - name: missing-component
+    # Not present in rootfs/ at all: exercises the false-negative path.
+    version: 3.0.0

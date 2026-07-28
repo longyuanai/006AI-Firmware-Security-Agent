@@ -1,0 +1,539 @@
+Package: base-files
+Version: 1562-r24106-10cc5fcd00
+Status: install user installed
+
+Package: busybox
+Version: 1.36.1-1
+Status: install user installed
+
+Package: ca-bundle
+Version: 20230311-1
+Status: install user installed
+
+Package: cgi-io
+Version: 2022-08-10-901b0f04-21
+Status: install user installed
+
+Package: dnsmasq
+Version: 2.90-2
+Status: install user installed
+
+Package: dropbear
+Version: 2022.82-6
+Status: install user installed
+
+Package: firewall4
+Version: 2023-09-01-598d9fbb-1
+Status: install user installed
+
+Package: fstools
+Version: 2023-02-28-bfe882d5-1
+Status: install user installed
+
+Package: fwtool
+Version: 2019-11-12-8f7fe925-1
+Status: install user installed
+
+Package: getrandom
+Version: 2022-08-13-4c7b720b-2
+Status: install user installed
+
+Package: hostapd-common
+Version: 2023-09-08-e5ccbfc6-8
+Status: install user installed
+
+Package: iw
+Version: 5.19-1
+Status: install user installed
+
+Package: iwinfo
+Version: 2023-07-01-ca79f641-1
+Status: install user installed
+
+Package: jansson4
+Version: 2.14-3
+Status: install user installed
+
+Package: jshn
+Version: 2023-05-23-75a3b870-1
+Status: install user installed
+
+Package: jsonfilter
+Version: 2024-01-23-594cfa86-1
+Status: install user installed
+
+Package: kernel
+Version: 5.15.167-1-2da7f4f00c16ea4dde7435194cd629e1
+Status: install user installed
+
+Package: kmod-ath
+Version: 5.15.167+6.1.110-1-1
+Status: install user installed
+
+Package: kmod-ath9k
+Version: 5.15.167+6.1.110-1-1
+Status: install user installed
+
+Package: kmod-ath9k-common
+Version: 5.15.167+6.1.110-1-1
+Status: install user installed
+
+Package: kmod-cfg80211
+Version: 5.15.167+6.1.110-1-1
+Status: install user installed
+
+Package: kmod-crypto-acompress
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-aead
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-ccm
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-cmac
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-crc32c
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-ctr
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-gcm
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-gf128
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-ghash
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-hash
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-hmac
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-manager
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-null
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-rng
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-seqiv
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-crypto-sha512
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-gpio-button-hotplug
+Version: 5.15.167-3
+Status: install user installed
+
+Package: kmod-lib-crc-ccitt
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-lib-crc32c
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-lib-lzo
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-mac80211
+Version: 5.15.167+6.1.110-1-1
+Status: install user installed
+
+Package: kmod-nf-conntrack
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-conntrack6
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-flow
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-log
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-log6
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-nat
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-reject
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nf-reject6
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nfnetlink
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nft-core
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nft-fib
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nft-nat
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-nft-offload
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-ppp
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-pppoe
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-pppox
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-random-core
+Version: 5.15.167-1
+Status: install user installed
+
+Package: kmod-slhc
+Version: 5.15.167-1
+Status: install user installed
+
+Package: libblobmsg-json20230523
+Version: 2023-05-23-75a3b870-1
+Status: install user installed
+
+Package: libc
+Version: 1.2.4-4
+Status: install user installed
+
+Package: libgcc1
+Version: 12.3.0-4
+Status: install user installed
+
+Package: libiwinfo-data
+Version: 2023-07-01-ca79f641-1
+Status: install user installed
+
+Package: libiwinfo20230701
+Version: 2023-07-01-ca79f641-1
+Status: install user installed
+
+Package: libjson-c5
+Version: 0.16-3
+Status: install user installed
+
+Package: libjson-script20230523
+Version: 2023-05-23-75a3b870-1
+Status: install user installed
+
+Package: liblucihttp-ucode
+Version: 2023-03-15-9b5b683f-1
+Status: install user installed
+
+Package: liblucihttp0
+Version: 2023-03-15-9b5b683f-1
+Status: install user installed
+
+Package: libmbedtls12
+Version: 2.28.9-1
+Status: install user installed
+
+Package: libmnl0
+Version: 1.0.5-1
+Status: install user installed
+
+Package: libnftnl11
+Version: 1.2.6-1
+Status: install user installed
+
+Package: libnl-tiny1
+Version: 2023-07-27-bc92a280-1
+Status: install user installed
+
+Package: libpthread
+Version: 1.2.4-4
+Status: install user installed
+
+Package: libubox20230523
+Version: 2023-05-23-75a3b870-1
+Status: install user installed
+
+Package: libubus20230605
+Version: 2023-06-05-f787c97b-1
+Status: install user installed
+
+Package: libuci20130104
+Version: 2023-08-10-5781664d-1
+Status: install user installed
+
+Package: libuclient20201210
+Version: 2023-04-13-007d9454-1
+Status: install user installed
+
+Package: libucode20230711
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: libustream-mbedtls20201210
+Version: 2023-02-25-498f6e26-1
+Status: install user installed
+
+Package: logd
+Version: 2022-08-13-4c7b720b-2
+Status: install user installed
+
+Package: luci
+Version: git-23.051.66410-a505bb1
+Status: install user installed
+
+Package: luci-app-firewall
+Version: git-24.067.01746-69867db
+Status: install user installed
+
+Package: luci-app-opkg
+Version: git-24.148.43905-2891ca4
+Status: install user installed
+
+Package: luci-base
+Version: git-24.264.56413-c7a3562
+Status: install user installed
+
+Package: luci-light
+Version: git-23.024.33244-34dee82
+Status: install user installed
+
+Package: luci-mod-admin-full
+Version: git-19.253.48496-3f93650
+Status: install user installed
+
+Package: luci-mod-network
+Version: git-24.264.56960-63ba3cb
+Status: install user installed
+
+Package: luci-mod-status
+Version: git-24.212.61237-b6da3f2
+Status: install user installed
+
+Package: luci-mod-system
+Version: git-24.067.01860-7a82b2f
+Status: install user installed
+
+Package: luci-proto-ipv6
+Version: git-24.086.45108-51aee90
+Status: install user installed
+
+Package: luci-proto-ppp
+Version: git-24.135.44542-f1ec9c2
+Status: install user installed
+
+Package: luci-ssl
+Version: git-23.035.26083-7550ad6
+Status: install user installed
+
+Package: luci-theme-bootstrap
+Version: git-24.086.46634-1ffe078
+Status: install user installed
+
+Package: mtd
+Version: 26
+Status: install user installed
+
+Package: netifd
+Version: 2024-01-04-c18cc79d-2
+Status: install user installed
+
+Package: nftables-json
+Version: 1.0.8-1
+Status: install user installed
+
+Package: odhcp6c
+Version: 2023-05-12-bcd28363-20
+Status: install user installed
+
+Package: odhcpd-ipv6only
+Version: 2023-10-24-d8118f6e-1
+Status: install user installed
+
+Package: openwrt-keyring
+Version: 2022-03-25-62471e69-2
+Status: install user installed
+
+Package: opkg
+Version: 2022-02-24-d038e5b6-2
+Status: install user installed
+
+Package: ppp
+Version: 2.4.9.git-2021-01-04-4
+Status: install user installed
+
+Package: ppp-mod-pppoe
+Version: 2.4.9.git-2021-01-04-4
+Status: install user installed
+
+Package: procd
+Version: 2023-06-25-2db83655-2
+Status: install user installed
+
+Package: procd-seccomp
+Version: 2023-06-25-2db83655-2
+Status: install user installed
+
+Package: px5g-mbedtls
+Version: 10
+Status: install user installed
+
+Package: rpcd
+Version: 2023-07-01-c07ab2f9-1
+Status: install user installed
+
+Package: rpcd-mod-file
+Version: 2023-07-01-c07ab2f9-1
+Status: install user installed
+
+Package: rpcd-mod-iwinfo
+Version: 2023-07-01-c07ab2f9-1
+Status: install user installed
+
+Package: rpcd-mod-luci
+Version: 20240305-1
+Status: install user installed
+
+Package: rpcd-mod-rrdns
+Version: 20170710
+Status: install user installed
+
+Package: rpcd-mod-ucode
+Version: 2023-07-01-c07ab2f9-1
+Status: install user installed
+
+Package: swconfig
+Version: 12
+Status: install user installed
+
+Package: uboot-envtools
+Version: 2023.04-1
+Status: install user installed
+
+Package: ubox
+Version: 2022-08-13-4c7b720b-2
+Status: install user installed
+
+Package: ubus
+Version: 2023-06-05-f787c97b-1
+Status: install user installed
+
+Package: ubusd
+Version: 2023-06-05-f787c97b-1
+Status: install user installed
+
+Package: uci
+Version: 2023-08-10-5781664d-1
+Status: install user installed
+
+Package: uclient-fetch
+Version: 2023-04-13-007d9454-1
+Status: install user installed
+
+Package: ucode
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-fs
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-html
+Version: 1
+Status: install user installed
+
+Package: ucode-mod-math
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-nl80211
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-rtnl
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-ubus
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-uci
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: ucode-mod-uloop
+Version: 2024-07-11-1a8a0bcf-3
+Status: install user installed
+
+Package: uhttpd
+Version: 2023-06-25-34a8a74d-2
+Status: install user installed
+
+Package: uhttpd-mod-ubus
+Version: 2023-06-25-34a8a74d-2
+Status: install user installed
+
+Package: urandom-seed
+Version: 3
+Status: install user installed
+
+Package: urngd
+Version: 2023-11-01-44365eb1-1
+Status: install user installed
+
+Package: usign
+Version: 2020-05-23-f1f65026-1
+Status: install user installed
+
+Package: wireless-regdb
+Version: 2024.07.04-1
+Status: install user installed
+
+Package: wpad-basic-mbedtls
+Version: 2023-09-08-e5ccbfc6-8
+Status: install user installed

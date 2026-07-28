@@ -78,14 +78,14 @@
 ## 待派 Codex 的任务(按优先级)
 
 > 卡片格式见 [CODEX_INSTRUCTIONS.md](CODEX_INSTRUCTIONS.md)。
-> 当前基线:**278 passed / 4 skipped**,ruff + mypy 全绿。
+> 当前基线:**329 passed / 4 skipped**,ruff + mypy 全绿。
 
 | ID | 任务 | 优先级 | 阻塞点 |
 |----|------|--------|--------|
 | ARCH-001 | 收敛两套解包栈 | P1 | **需先决策主线** |
-| EVAL-001 | §9 指标的评测基线 | P1 | 无 |
 | ~~RPT-HTML-001~~ | ~~HTML 报告~~ | done | — |
 | ~~DETECT-002~~ | ~~扩充检测器覆盖面~~ | done(部分) | RPM 暂缓,见下 |
+| ~~EVAL-001~~ | ~~评测基线与跑分脚本~~ | done(部分) | 见 `benchmarks/`,4 个指标中 2 个部分测量、2 个仍无法测 |
 | DETECT-002 | 扩充检测器覆盖面 | P2 | 无 |
 | DIFF-001 | 固件差分分析 | P3 | 无 |
 | FINGERPRINT-001 | 厂商/OEM 指纹识别 | P3 | 无 |
@@ -111,42 +111,31 @@
 
 ---
 
-### EVAL-001 · 建立 §9 指标的评测基线(P1)
+### EVAL-001 · 建立 §9 指标的评测基线 — ✅ 部分完成
 
-```
-[EVAL-001] 006 AI-Firmware-Security-Agent · 评测基线与跑分脚本
+`benchmarks/run.py` + `benchmarks/corpus/` 已实现,`benchmarks/README.md` 有
+完整的"测量范围"表,tech-spec §9 已按实测结果更新。
 
-## 背景
-- tech-spec §9 定了 4 个指标,目前**一个都无法测量**,没有语料也没有跑分脚本
-- FW-DETECT-001 已让真实固件能出组件,现在具备了可测量的前提
+**做了什么**:
+- `benchmarks/corpus/openwrt-23.05.5-ath79-tiny/`:从仓库自带的真实 OpenWrt
+  官方 manifest(135 包)生成 opkg status 文件 + expected.yml,测的是
+  `detectors/packages.py` 的解析器在 135 条真实、格式各异的版本串上不出错——
+  但这不是独立标注的准确率(rootfs 和 expected.yml 同源,结构上不会有误报)
+- `benchmarks/corpus/harness-selfcheck/`:4 组件手写夹具,四种结果各一例
+  (命中/版本错/漏检/误报),只用来验证跑分脚本算术本身是对的
+- `--time-scan` 实测了检测+mock CVE 匹配+PRisk 打分的端到端耗时
 
-## 必须做的事
-1. 新建 benchmarks/corpus/,每个样本一个目录:
-   firmware 或 rootfs + expected.yml(人工标注的组件清单 + 版本)
-   先放 3-5 个公开固件(OpenWrt / DD-WRT 等,记录来源 URL + SHA-256)
-2. 新建 benchmarks/run.py:
-   - 对每个样本跑 detect_components,与 expected.yml 比对
-   - 输出 precision / recall / F1,以及漏检、误检、版本错三类明细
-   - 组件识别耗时与端到端报告耗时
-3. 新建 tests/test_benchmark_harness.py:用小夹具验证跑分脚本本身算得对
-   (不跑真语料,真语料标 @pytest.mark.integration 默认 skip)
-4. 结果写回 tech-spec §9 的"现状"列,**如实填**,不达标就写不达标
+**为什么还是"部分完成",没做原计划的"3-5 个公开固件"**:
+- 这个环境没有出网权限,无法下载新固件语料
+- 仓库里唯一的真实 `.bin` 样本需要 binwalk 提取到 rootfs,而这个环境没装
+  binwalk(`BinwalkRunner().is_available()` 返回 `False`)
+- CVE 匹配召回率、PRisk 排序一致性两项仍完全无法测:前者需要真 NVD 数据
+  (被出网策略挡了),后者需要人工标注的优先级基线,目前没有
 
-## 必须满足的约束
-- 语料里的固件如体积大,只提交 rootfs 摘要或下载脚本,不要把大二进制入库
-- 跑分脚本不得联网(CVE 相关指标用 --cve-source mock/local)
-- Windows 兼容
-
-## 不要做的事
-- 不要为了让数字好看去调标注
-- 不要把未达标的指标在 README 里写成已达成
-
-## 验收
-- [ ] pytest 全绿(基线 278 passed)
-- [ ] 新增测试 ≥ 6 个
-- [ ] benchmarks/run.py 能跑出一份报告,粘贴输出
-- [ ] tech-spec §9 现状列已按真实结果更新
-```
+**继续这项工作的前提**:找到一个能出网、或者能装 binwalk 的环境,把真实
+`.bin` 提取出来跑,再补充人工标注的组件清单作为独立 ground truth——而不是
+像 `openwrt-23.05.5-ath79-tiny` 这条一样从 manifest 反推。RPM 检测器和
+CVE 匹配召回率都在等同一件事:一个能验证的真实环境。
 
 ---
 

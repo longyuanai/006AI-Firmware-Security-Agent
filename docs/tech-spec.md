@@ -294,16 +294,42 @@ CI 跑 `pip-audit --strict`。报告别人组件漏洞的工具不该带着自�
 
 ## 9. 评估指标
 
+评测基线见 `benchmarks/`(EVAL-001)。**读 `benchmarks/README.md` 里"测量范围"
+那张表再看下面的数字**——每一条现状都有明确的适用边界,不要脱离边界引用。
+
 | 指标 | 目标 | 现状 |
 |------|------|------|
-| 组件识别准确率 | ≥ 95% (主流组件) | **未测量**——缺带标注答案的固件语料 |
-| CVE 匹配召回率 | ≥ 90% | **未测量** |
-| PRisk 排序与人工一致 | ≥ 80% (Top 10) | **未测量**——缺人工标注基线 |
-| 报告生成时间 | < 30s (10MB 固件) | **未测量**;注意 `--cve-source nvd` 每组件一次请求,无 key 时 5 req/30s,135 包约 13 分钟 |
+| 组件识别准确率 | ≥ 95% (主流组件) | **部分测量**。`detectors/packages.py`(opkg/dpkg 解析 + `upstream_version()`)对着 135 包的真实 OpenWrt 官方 manifest 跑,name-level 与 name+version-level precision/recall/F1 均为 1.000——这证明解析器在 135 条真实、格式各异的版本串(git-hash 日期、多段 revision、裸整数)上不会解析错或漏解析,但**不是**独立标注下的准确率:该语料的 rootfs 是从同一份 manifest 生成的,expected.yml 天然不会包含 manifest 之外的内容,结构上不可能出现误报。`detectors/binary.py` / `detectors/osrelease.py` 仍未有真实语料验证,只在自检夹具(`benchmarks/corpus/harness-selfcheck/`)里跑过——那份夹具是为了验证跑分脚本本身算得对,不是准确率语料。 |
+| CVE 匹配召回率 | ≥ 90% | **未测量**——需要真实 NVD 数据核对,而这个环境 `services.nvd.nist.gov` 被出网策略挡了(403),本地缓存 `cve-db sync` 依赖同一条网络。 |
+| PRisk 排序与人工一致 | ≥ 80% (Top 10) | **未测量**——需要人工标注的优先级排序基线,目前没有。 |
+| 报告生成时间 | < 30s (10MB 固件) | **部分测量**。`benchmarks/run.py --time-scan` 实测:135 组件的 `detect_components` + mock CVE 匹配 + PRisk 打分,全流程约 2ms(见下方实测输出)。**不包含** binwalk/unsquashfs 解包耗时——这个环境没装 binwalk(`BinwalkRunner().is_available()` 返回 `False`),这一步完全没法测。真实固件的端到端耗时瓶颈几乎必然在解包和 `--cve-source nvd` 的网络请求(无 key 时 5 req/30s,135 包约 13 分钟),不在检测/打分本身。 |
 
-四个指标目前都没有测量手段。要让它们有意义,需要先建评测基线(见 EVAL-001):
-带标注组件清单的固件语料 + 跑分脚本。**在此之前不要在文档或对外材料里
-引用这些数字**——它们是目标,不是已达成的结果。
+```
+$ poetry run python benchmarks/run.py --time-scan
+
+=== harness-selfcheck ===
+  expected: 3   detected: 3
+  name-level    precision=0.667 recall=0.667 f1=0.667
+  name+version  precision=0.333 recall=0.333 f1=0.333
+
+=== openwrt-23.05.5-ath79-tiny ===
+  expected: 135   detected: 135
+  name-level    precision=1.000 recall=1.000 f1=1.000
+  name+version  precision=1.000 recall=1.000 f1=1.000
+
+=== timing: rootfs (135 components) ===
+  detect_components:           1.8 ms
+  match_components (mock):     0.1 ms
+  score_and_rank_matches:      0.1 ms
+  total:                       1.9 ms
+```
+
+`harness-selfcheck` 的 0.667/0.333 不是"检测器表现差"——那份夹具是刻意构造成
+每种结果各占一例(命中/版本错/漏检/误报),用来验证跑分脚本的算术本身是对的,
+在 `tests/test_benchmark_harness.py` 里有对应的手算断言。
+
+仍然是那句话:**未测量的部分不要在文档或对外材料里说成已达成**,已测量的
+部分也要带着上面写明的适用边界一起引用,不要只截取数字。
 
 ## 10. 路线图
 

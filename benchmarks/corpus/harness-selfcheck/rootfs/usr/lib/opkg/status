@@ -1,0 +1,11 @@
+Package: known-good
+Version: 1.0.0
+Status: install user installed
+
+Package: version-drift
+Version: 2.0.0
+Status: install user installed
+
+Package: extra-component
+Version: 9.9.9
+Status: install user installed

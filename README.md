@@ -277,6 +277,16 @@ poetry run pytest -v
 
 All tests use a stubbed router; no live LLM is required.
 
+## Detection accuracy benchmark
+
+```bash
+poetry run python benchmarks/run.py --time-scan
+```
+
+Scores `detectors/` against the corpus in `benchmarks/corpus/`. Read
+`benchmarks/README.md` first — it states exactly what is and is not
+validated by each number before you cite one.
+
 ## Firmware emulation
 
 Build the isolated QEMU user-mode image:
