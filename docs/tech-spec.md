@@ -120,6 +120,8 @@ def unpack_firmware(bin_path, *, runner=subprocess.run,
 | `detectors/packages.py` | opkg / dpkg status(Debian control 格式,共用解析器) | 最强 |
 | `detectors/osrelease.py` | `/etc/os-release`,识别发行版 | 中 |
 | `detectors/binary.py` | ELF 里编译进去的版本 banner | 启发式 |
+| `detectors/python_packages.py` | `*.dist-info/METADATA` / `*.egg-info/PKG-INFO` | 强(结构化元数据) |
+| `detectors/node_packages.py` | `package.json`(含 `node_modules/` 下的依赖) | 强(结构化元数据) |
 
 ```python
 def detect_components(rootfs: Path) -> list[Component]:   # 单个 rootfs
@@ -135,6 +137,12 @@ def detect_in_tree(root: Path) -> list[Component]:        # 解包树,内含嵌�
   rootfs,要先找嵌套的候选根
 - 只读不执行,所有读取有上限
 - `Component.extra` 带 `detector` / `evidence`,报告和 SBOM 能透出来源
+- 二进制 banner 只收录**编译期字面量拼接**能保证的模式(如 `"name v" VERSION_STR`),
+  运行时 `sprintf` 拼出来的横幅(如 libcurl)版本号和前缀分开存放,静态扫描本来就
+  找不到,不收录
+- **RPM 数据库检测器暂缓**:RPM header 是自定义二进制格式,在没有真实 rpmdb
+  文件可供校验的情况下实现,风险是产出一个看似合理、实际解析错误的解析器——
+  比不检测更糟。需要真实样本才能补上
 
 ### 5.3 CVE DB (`cve_db/` package)
 

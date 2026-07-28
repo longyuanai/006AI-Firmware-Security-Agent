@@ -86,6 +86,51 @@ _PATTERNS: tuple[tuple[re.Pattern[bytes], str, str, str], ...] = (
         "denx.de",
         "bootloader",
     ),
+    # The five patterns below match a single hardcoded string literal (or an
+    # adjacent-literal concatenation the C preprocessor merges at compile
+    # time), so the joined "name/version" bytes are guaranteed to sit
+    # contiguously in the binary's rodata. That is not true of every banner:
+    # some projects assemble their version text at runtime with sprintf,
+    # which leaves the format string and the version number in separate,
+    # non-adjacent locations, so a substring scan would never match them
+    # (libcurl's curl_version() is a real example and is deliberately not
+    # included here for that reason). Each pattern below is the exact,
+    # well-documented banner text a real build embeds:
+    #   zlib       deflate.c:   deflate_copyright[] = " deflate 1.2.11 ..."
+    #   wpa_supplicant  .c: "wpa_supplicant v" VERSION_STR "\n..."
+    #   hostapd         .c: "hostapd v" VERSION_STR "\n..."
+    #   mbedtls    version.h:  MBEDTLS_VERSION_STRING "mbed TLS 2.28.0"
+    #   nginx      nginx.h:    NGINX_VER "nginx/" NGINX_VERSION
+    (
+        re.compile(rb"deflate (\d+\.\d+\.\d+) Copyright"),
+        "zlib",
+        "zlib.net",
+        "compression",
+    ),
+    (
+        re.compile(rb"wpa_supplicant v(\d+\.\d+)"),
+        "wpa_supplicant",
+        "w1.fi",
+        "network",
+    ),
+    (
+        re.compile(rb"hostapd v(\d+\.\d+)"),
+        "hostapd",
+        "w1.fi",
+        "network",
+    ),
+    (
+        re.compile(rb"mbed TLS (\d+\.\d+\.\d+)"),
+        "mbedtls",
+        "trustedfirmware.org",
+        "crypto",
+    ),
+    (
+        re.compile(rb"nginx/(\d+\.\d+\.\d+)"),
+        "nginx",
+        "nginx.org",
+        "web_server",
+    ),
 )
 
 

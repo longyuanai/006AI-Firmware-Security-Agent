@@ -85,6 +85,7 @@
 | ARCH-001 | 收敛两套解包栈 | P1 | **需先决策主线** |
 | EVAL-001 | §9 指标的评测基线 | P1 | 无 |
 | ~~RPT-HTML-001~~ | ~~HTML 报告~~ | done | — |
+| ~~DETECT-002~~ | ~~扩充检测器覆盖面~~ | done(部分) | RPM 暂缓,见下 |
 | DETECT-002 | 扩充检测器覆盖面 | P2 | 无 |
 | DIFF-001 | 固件差分分析 | P3 | 无 |
 | FINGERPRINT-001 | 厂商/OEM 指纹识别 | P3 | 无 |
@@ -218,6 +219,22 @@
 - [ ] 新增测试 ≥ 15 个
 - [ ] 每个新检测器至少 1 个真实形态夹具
 ```
+
+---
+
+### DETECT-002 补记:RPM 检测器为什么没做
+
+卡片原计划包含 `detectors/rpm.py`。没做,原因不是工作量,是**没有可信的验证手段**:
+RPM header 是自定义的 tag-based 二进制格式(magic + index + data area),这个环境里
+没有真实 `rpmdb.sqlite` / `Packages` 文件能跑通验证。写一个看起来合理但实际解析
+错误的解析器,比干脆不检测更糟——错误的版本号会污染 CVE 匹配还不容易被发现。
+
+重新捡起来的前提:先搞到至少一个真实的 RPM 数据库文件(或者认可基于 `rpm2cpio` /
+系统 `rpm` 命令做验证测试),再实现,而不是凭格式文档硬写。
+
+已完成的部分:`detectors/binary.py` 加了 zlib / wpa_supplicant / hostapd / mbedtls /
+nginx 五个新 banner(全部是编译期字面量,不是猜的);新增 `detectors/python_packages.py`
+(dist-info/egg-info)和 `detectors/node_packages.py`(package.json,含 node_modules 依赖)。
 
 ---
 

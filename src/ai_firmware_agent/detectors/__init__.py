@@ -16,7 +16,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ai_firmware_agent.detectors import binary, osrelease, packages
+from ai_firmware_agent.detectors import (
+    binary,
+    node_packages,
+    osrelease,
+    packages,
+    python_packages,
+)
 from ai_firmware_agent.normalizer import Component
 
 #: Higher wins when two detectors disagree about the same component.
@@ -24,6 +30,8 @@ DETECTOR_PRIORITY = {
     "manifest": 4,
     "opkg": 3,
     "dpkg": 3,
+    "python-dist-info": 3,
+    "node-package-json": 3,
     "os-release": 2,
     "binary": 1,
 }
@@ -135,17 +143,22 @@ def iter_rootfs_candidates(root: Path) -> list[Path]:
     return candidates
 
 
+def _detect_all(root: Path) -> list[Component]:
+    return [
+        *packages.detect(root),
+        *python_packages.detect(root),
+        *node_packages.detect(root),
+        *osrelease.detect(root),
+        *binary.detect(root),
+    ]
+
+
 def detect_components(rootfs: str | Path) -> list[Component]:
     """Inventory one extracted filesystem, strongest evidence first."""
     root = Path(rootfs)
     if not root.is_dir():
         return []
-    found = [
-        *packages.detect(root),
-        *osrelease.detect(root),
-        *binary.detect(root),
-    ]
-    return merge_components(found)
+    return merge_components(_detect_all(root))
 
 
 def detect_in_tree(root: str | Path) -> list[Component]:
@@ -155,13 +168,7 @@ def detect_in_tree(root: str | Path) -> list[Component]:
         return []
     found: list[Component] = []
     for candidate in iter_rootfs_candidates(tree):
-        found.extend(
-            [
-                *packages.detect(candidate),
-                *osrelease.detect(candidate),
-                *binary.detect(candidate),
-            ]
-        )
+        found.extend(_detect_all(candidate))
     return merge_components(found)
 
 
@@ -172,6 +179,8 @@ __all__ = [
     "detect_in_tree",
     "iter_rootfs_candidates",
     "merge_components",
+    "node_packages",
     "osrelease",
     "packages",
+    "python_packages",
 ]
