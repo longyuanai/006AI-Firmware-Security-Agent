@@ -5,7 +5,7 @@ from __future__ import annotations
 from jsonschema import validate
 
 from ai_firmware_agent.normalizer import Component
-from ai_firmware_agent.sbom import build_cyclonedx_bom
+from ai_firmware_agent.sbom import build_cyclonedx_bom, write_cyclonedx_bom
 
 CYCLONEDX_SCHEMA = {
     "type": "object",
@@ -68,3 +68,43 @@ def test_cyclonedx_components_are_sorted():
         "busybox",
         "zlib",
     ]
+
+
+def test_cyclonedx_preserves_provider_evidence():
+    bom = build_cyclonedx_bom(
+        [
+            Component(
+                name="busybox",
+                version="1.36.1",
+                path="/bin/busybox",
+                extra={
+                    "purl": "pkg:apk/busybox@1.36.1",
+                    "detection_sources": ["syft", "cve-bin-tool"],
+                    "confidence": 0.93,
+                },
+            )
+        ]
+    )
+    component = bom["components"][0]
+    assert component["purl"] == "pkg:apk/busybox@1.36.1"
+    assert component["evidence"]["occurrences"] == [
+        {"location": "/bin/busybox"}
+    ]
+    assert component["properties"][1]["value"] == "0.93"
+
+
+def test_cyclonedx_write_replaces_destination_atomically(tmp_path):
+    destination = tmp_path / "sbom.json"
+    destination.write_text("old", encoding="utf-8")
+    written = write_cyclonedx_bom(
+        [Component(name="zlib", version="1.3")],
+        destination,
+    )
+    assert written == destination
+    assert validate(
+        instance=__import__("json").loads(
+            destination.read_text(encoding="utf-8")
+        ),
+        schema=CYCLONEDX_SCHEMA,
+    ) is None
+    assert list(tmp_path.glob("*.tmp")) == []

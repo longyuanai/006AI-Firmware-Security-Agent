@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Protocol
 
-from ai_firmware_agent.binwalk_runner import BinwalkRunner, ExtractResult
+from ai_firmware_agent.binwalk_runner import ExtractResult
 from ai_firmware_agent.detectors import detect_in_tree
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers.mock import components_from_manifest
@@ -15,6 +16,17 @@ from ai_firmware_agent.extraction import (
     FirmwareUnpackError,
     check_extraction_size,
 )
+
+
+class ExtractionRunner(Protocol):
+    async def extract(
+        self,
+        firmware_path: Path,
+        *,
+        output_dir: Path,
+    ) -> ExtractResult:
+        """Extract a firmware image into a controlled output directory."""
+        ...
 
 
 def parse_binwalk_result(result: ExtractResult) -> list[Component]:
@@ -48,7 +60,7 @@ async def extract_components(
     firmware_path: Path,
     *,
     output_dir: Path,
-    runner: BinwalkRunner,
+    runner: ExtractionRunner,
     max_bytes: int = MAX_EXTRACTED_BYTES,
     max_files: int = MAX_EXTRACTED_FILES,
 ) -> tuple[ExtractResult, list[Component]]:

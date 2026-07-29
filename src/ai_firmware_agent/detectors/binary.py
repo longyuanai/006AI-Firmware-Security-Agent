@@ -184,7 +184,7 @@ def detect(rootfs: Path) -> list[Component]:
         if blob is None:
             continue
         try:
-            evidence = str(path.relative_to(rootfs))
+            evidence = path.relative_to(rootfs).as_posix()
         except ValueError:
             evidence = path.name
         for name, version, vendor, category in scan_bytes(blob):

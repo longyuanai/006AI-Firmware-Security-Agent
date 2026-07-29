@@ -19,6 +19,12 @@ from ai_firmware_agent.kev import kev_lookup
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.nvd import nvd_lookup
 from ai_firmware_agent.parsers import parse_firmware
+from ai_firmware_agent.providers import (
+    CVEBinaryInventoryProvider,
+    SyftInventoryProvider,
+    ToolCapability,
+    UnblobRunner,
+)
 from ai_firmware_agent.reporter import render_markdown
 from ai_firmware_agent.scoring import PRiskScore, rank_matches, score_component
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
@@ -51,6 +57,10 @@ __all__ = [
     "FirmwareProductAdapter",
     "KnownCvePattern",
     "PRiskScore",
+    "CVEBinaryInventoryProvider",
+    "SyftInventoryProvider",
+    "ToolCapability",
+    "UnblobRunner",
     "enrich_top_components",
     "emulate_firmware",
     "epss_lookup",
