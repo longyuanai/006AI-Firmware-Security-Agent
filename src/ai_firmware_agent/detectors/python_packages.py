@@ -68,7 +68,7 @@ def detect(rootfs: Path) -> list[Component]:
         if not name or not version:
             continue
         try:
-            evidence = str(path.relative_to(rootfs))
+            evidence = path.relative_to(rootfs).as_posix()
         except ValueError:
             evidence = path.name
         components.append(

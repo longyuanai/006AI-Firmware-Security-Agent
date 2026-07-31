@@ -208,6 +208,55 @@ def cve_db_status(db_path: Path | None) -> None:
 
 
 @cli.command()
+@click.option(
+    "--json",
+    "json_output",
+    is_flag=True,
+    help="Emit a machine-readable external-tool capability report.",
+)
+def capabilities(json_output: bool) -> None:
+    """Report optional static-analysis tools without running firmware."""
+    from ai_firmware_agent.binwalk_runner import BinwalkRunner
+    from ai_firmware_agent.providers import (
+        CVEBinaryInventoryProvider,
+        SyftInventoryProvider,
+        ToolCapability,
+        UnblobRunner,
+    )
+
+    async def inspect() -> list[ToolCapability]:
+        binwalk = BinwalkRunner()
+        binwalk_available = await binwalk.is_available()
+        results = [
+            ToolCapability(
+                name="binwalk",
+                available=binwalk_available,
+                reason=(
+                    ""
+                    if binwalk_available
+                    else "executable not found on PATH"
+                ),
+                features=("signature-scan", "extraction", "entropy"),
+            )
+        ]
+        for provider in (
+            UnblobRunner(),
+            SyftInventoryProvider(),
+            CVEBinaryInventoryProvider(),
+        ):
+            results.append(await provider.capability())
+        return results
+
+    report = [item.to_dict() for item in asyncio.run(inspect())]
+    if json_output:
+        click.echo(json.dumps({"tools": report}, ensure_ascii=True))
+        return
+    for item in report:
+        status = "available" if item["available"] else "unavailable"
+        click.echo(f"{item['name']}: {status}")
+
+
+@cli.command()
 @click.option("--input", "-i", "input_path", type=str)
 @click.option("--output", "-o", "output_path", default="-", type=click.Path())
 @click.option(

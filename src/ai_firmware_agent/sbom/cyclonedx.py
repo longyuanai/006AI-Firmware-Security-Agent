@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import tempfile
 from collections.abc import Iterable
 from copy import deepcopy
 from pathlib import Path
@@ -22,6 +23,9 @@ VulnerabilityPair = tuple[Component, CveRecord]
 
 
 def _purl(component: Component) -> str:
+    provided = str(component.extra.get("purl", "")).strip()
+    if provided:
+        return provided
     name = quote(component.name.strip(), safe="")
     version = quote(component.version.strip(), safe="")
     return f"pkg:generic/{name}@{version}"
@@ -36,9 +40,49 @@ def _component_entry(component: Component) -> dict[str, Any]:
         "version": component.version.strip(),
         "purl": purl,
     }
-    license_name = str(component.extra.get("license", "")).strip()
-    if license_name:
-        entry["licenses"] = [{"license": {"name": license_name}}]
+    raw_licenses = component.extra.get("licenses")
+    if isinstance(raw_licenses, list):
+        licenses = sorted(
+            {str(item).strip() for item in raw_licenses if str(item).strip()}
+        )
+    else:
+        license_name = str(component.extra.get("license", "")).strip()
+        licenses = [license_name] if license_name else []
+    if licenses:
+        entry["licenses"] = [
+            {"license": {"name": license_name}}
+            for license_name in licenses
+        ]
+
+    evidence_paths = component.extra.get("evidence_paths")
+    if not isinstance(evidence_paths, list):
+        evidence_paths = [component.path] if component.path else []
+    occurrences = [
+        {"location": str(path)}
+        for path in sorted({str(path) for path in evidence_paths if path})
+    ]
+    if occurrences:
+        entry["evidence"] = {"occurrences": occurrences}
+
+    properties: list[dict[str, str]] = []
+    detection_sources = component.extra.get("detection_sources")
+    if isinstance(detection_sources, list) and detection_sources:
+        properties.append(
+            {
+                "name": "ai-firmware-agent:detection-sources",
+                "value": ",".join(sorted(str(item) for item in detection_sources)),
+            }
+        )
+    confidence = component.extra.get("confidence")
+    if isinstance(confidence, (int, float)):
+        properties.append(
+            {
+                "name": "ai-firmware-agent:confidence",
+                "value": f"{float(confidence):.2f}",
+            }
+        )
+    if properties:
+        entry["properties"] = properties
     return entry
 
 
@@ -155,13 +199,28 @@ def write_cyclonedx_bom(
     """Write a CycloneDX document without including firmware contents."""
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(
+    content = (
         json.dumps(
             build_cyclonedx_bom(components, vulnerabilities),
             indent=2,
             ensure_ascii=False,
         )
-        + "\n",
-        encoding="utf-8",
+        + "\n"
     )
+    temporary: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=destination.parent,
+            prefix=f".{destination.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as stream:
+            stream.write(content)
+            temporary = Path(stream.name)
+        temporary.replace(destination)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
     return destination

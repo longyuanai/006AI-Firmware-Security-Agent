@@ -45,6 +45,30 @@ firmware.tar.gz ──► Parser ──► Component[*] ──► CVE DB lookup
   packages (busybox, openssl, openssh, xz, lighttpd, dropbear, kernel).
   NVD failures use this local data so scans remain available offline.
 
+### Optional static-analysis providers
+
+The asynchronous scanner discovers external tools before using them. None is a
+hard Python dependency:
+
+- Binwalk v3: primary signature scan and extraction
+- Unblob: secondary recursive extractor
+- Syft: filesystem package inventory, PURL, and license evidence
+- CVE Binary Tool: offline binary component/version checkers
+
+Inspect the current host without running firmware:
+
+```bash
+python -m ai_firmware_agent.cli capabilities --json
+```
+
+The scanner uses `Binwalk → Unblob → mock` fail-open selection. Syft and CVE
+Binary Tool inventories are merged by normalized component/version identity;
+their provider names, evidence paths, licenses, PURL, and confidence are
+preserved in CycloneDX output. Extraction skips symlinks and applies file-count
+and total-byte limits. See
+[`docs/open-source-fusion-plan.md`](docs/open-source-fusion-plan.md) for the
+architecture and remaining Docker/VEX/registry phases.
+
 ## Install
 
 ```bash

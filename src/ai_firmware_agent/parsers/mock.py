@@ -21,7 +21,12 @@ def components_from_manifest(raw: str) -> list[Component]:
         if not isinstance(item, dict):
             continue
         license_name = str(item.get("license", "")).strip()
-        extra = {"license": license_name} if license_name else {}
+        extra = {
+            "detection_sources": ["manifest"],
+            "confidence": 0.95,
+        }
+        if license_name:
+            extra["license"] = license_name
         out.append(
             Component(
                 name=str(item.get("name", "")).strip(),

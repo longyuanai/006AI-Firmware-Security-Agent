@@ -92,7 +92,7 @@ def _components_from_status(
         if any(marker in status for marker in _NOT_INSTALLED):
             continue
         try:
-            evidence = str(path.relative_to(rootfs))
+            evidence = path.relative_to(rootfs).as_posix()
         except ValueError:
             evidence = path.name
         components.append(

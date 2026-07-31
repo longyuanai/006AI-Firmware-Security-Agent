@@ -1,6 +1,6 @@
 # 006 AI-Firmware-Security-Agent · v0.1 TODO
 
-> **项目状态**: v0.7 ✅ (278 passed / 4 skipped)
+> **项目状态**: v0.7 静态融合实施中（386 passed / 2 skipped，2026-07-29）
 > **共享接口**: [v0.1-contract.md](../../000shared-llm-core/docs/v0.1-contract.md) (已冻结)
 > **派活模板**: [CODEX_INSTRUCTIONS.md](../../CODEX_INSTRUCTIONS.md)
 
@@ -31,6 +31,23 @@
 | NVD-PERF-001 | NvdClient 限速 + 缓存 + 连接复用 | done | 2026-07-27 | 2026-07-27 | 原先每组件新建客户端且不限速 |
 | FW-DETECT-001 | 真实固件组件检测器 (opkg/dpkg/os-release/ELF) | done | 2026-07-27 | 2026-07-27 | 此前真实固件一律返回空清单 |
 | SPEC-001 | tech-spec 与代码同步 | done | 2026-07-27 | 2026-07-27 | 原 §14.2 仍写着已修复的单列主键 |
+
+---
+
+## v0.6 · 开源能力融合
+
+详细设计见 [`open-source-fusion-plan.md`](open-source-fusion-plan.md)。
+
+| ID | 任务 | 状态 | 完成日 | 备注 |
+|----|------|------|--------|------|
+| FUSION-001 | Provider capability/inventory 协议 | done | 2026-07-29 | 可选工具、无硬依赖 |
+| FUSION-002 | Unblob 后备解包 adapter | done | 2026-07-29 | Binwalk → Unblob → mock |
+| FUSION-003 | Syft + CVE Binary Tool inventory | done | 2026-07-29 | PURL/evidence/confidence 合并 |
+| FUSION-004 | CycloneDX evidence + 原子写入 | done | 2026-07-29 | 保持 1.5 输出兼容 |
+| FUSION-005 | Docker static worker | pending | — | 固定 digest、只读、无网络 |
+| FUSION-006 | VEX triage | pending | — | OpenVEX/CycloneDX VEX |
+| FUSION-007 | Registry + firmware diff | partial | — | diff 已完成；持久 registry 待实现 |
+| FUSION-008 | FirmAE/QEMU lab worker | pending | — | 显式 opt-in，不进默认 scan |
 
 ---
 
