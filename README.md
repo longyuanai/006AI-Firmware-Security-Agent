@@ -289,12 +289,22 @@ docker compose build
 docker compose run --rm firmware-agent scan \
   --input /firmware/firmware_demo/demo-router.squashfs.bin \
   --output /output/report.md \
+  --cve-source mock \
   --top-n 0
 ```
 
-Set `NVD_API_KEY` in the shell when higher NVD rate limits are needed. The
-container runs as UID `10001`, mounts sample firmware read-only, and keeps
-reports in `./output`.
+The Compose service is an offline static worker: it runs as UID `10001`, has
+no network, uses a read-only root filesystem, drops every Linux capability,
+forbids privilege escalation, and applies CPU, memory, PID, and temporary-file
+limits. Sample firmware is mounted read-only and reports are the only durable
+writes, under `./output`. Use `--cve-source mock` for a self-contained demo or
+mount a populated local CVE cache when using `--cve-source local`; live NVD
+lookups intentionally belong outside this network-isolated worker.
+
+Both Dockerfile stages pin the same `python:3.11-slim` digest. When publishing
+the resulting application image, deploy it by its registry digest as well
+(for example, `registry.example/ai-firmware-agent@sha256:...`) rather than by a
+mutable tag.
 
 ## CI
 

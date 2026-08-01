@@ -1,4 +1,7 @@
-FROM python:3.11-slim AS builder
+# docker.io/library/python:3.11-slim, resolved 2026-08-01.
+# Keep both stages on the same immutable base so a tag move cannot silently
+# change the worker runtime between builds.
+FROM python:3.11-slim@sha256:db3ff2e1800a8581e2c48a27c3995339d47bdf046da21c7627accd3d51053a93 AS builder
 
 WORKDIR /src
 COPY . /src/006AI-Firmware-Security-Agent
@@ -10,7 +13,7 @@ RUN python -m pip wheel --no-cache-dir \
     /src/006AI-Firmware-Security-Agent
 
 
-FROM python:3.11-slim AS runtime
+FROM python:3.11-slim@sha256:db3ff2e1800a8581e2c48a27c3995339d47bdf046da21c7627accd3d51053a93 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
