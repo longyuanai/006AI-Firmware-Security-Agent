@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import codecs
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import httpx
@@ -76,6 +79,28 @@ def test_json_payload_can_be_read_from_stdin(tmp_path):
     result = CliRunner().invoke(cli, ["scan", "--json"], input=payload)
     assert result.exit_code == 0
     assert json.loads(result.output)["findings"]
+
+
+def test_native_cli_accepts_utf8_bom_and_unicode_path(tmp_path):
+    firmware = tmp_path / "固件样本.tar.gz"
+    firmware.write_bytes(_firmware(tmp_path).read_bytes())
+    payload = json.dumps(
+        {"firmware_path": str(firmware.resolve())},
+        ensure_ascii=False,
+    ).encode("utf-8")
+
+    result = subprocess.run(
+        [sys.executable, "-m", "ai_firmware_agent.cli", "scan", "--json"],
+        input=codecs.BOM_UTF8 + payload,
+        capture_output=True,
+        check=False,
+        cwd=Path(__file__).parents[1],
+    )
+
+    assert result.returncode == 0, result.stderr.decode("utf-8", errors="replace")
+    envelope = json.loads(result.stdout.decode("utf-8"))
+    assert envelope["errors"] == []
+    assert envelope["findings"][0]["host"].endswith("固件样本.tar.gz")
 
 
 def test_scan_firmware_url_with_mock_transport(tmp_path):

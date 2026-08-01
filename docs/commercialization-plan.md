@@ -81,7 +81,7 @@ NVD、EPSS、KEV 同步和 LLM 富化均可关闭。
 
 严格按以下顺序推进，每个 ID 独立 commit 并推送到 GitHub：
 
-1. COMM-WIN-001（当前仓库可独立完成）
+1. COMM-WIN-001（完成）
 2. COMM-SEC-001（需要共享 integration 依赖升级配合）
 3. COMM-REL-001
 4. ARCH-001
@@ -98,6 +98,6 @@ NVD、EPSS、KEV 同步和 LLM 富化均可关闭。
 
 - GitHub Linux CI 的 pip-audit 因共享 IntegrationGateway 依赖的 Starlette 0.46.2 失败。
 - 本机未安装 Binwalk、Unblob、Syft、CVE Binary Tool，真实工具链尚未在本机联调。
-- PowerShell 通过 stdin 传递带中文绝对路径的 JSON 时存在 BOM/编码兼容问题。
+- PowerShell UTF-8 BOM 与中文绝对路径已由原生 subprocess 回归测试覆盖。
 - CVE 召回率、PRisk 人工一致率和真实解包性能仍未独立测量。
 - 当前包版本仍为 `0.1.0`，且没有正式 Git tag/GitHub Release。

@@ -57,7 +57,7 @@
 
 | ID | 任务 | 状态 | 优先级 | 阻塞点 |
 |----|------|------|--------|--------|
-| COMM-WIN-001 | PowerShell JSON stdin UTF-8/BOM 兼容 | in progress | P0 | — |
+| COMM-WIN-001 | PowerShell JSON stdin UTF-8/BOM 兼容 | done | P0 | 2026-08-01，原生 subprocess 回归覆盖中文路径 |
 | COMM-SEC-001 | 清除 Starlette 依赖审计失败 | blocked-upstream | P0 | shared-integration/FastAPI 版本约束 |
 | COMM-REL-001 | 统一版本、依赖锁定和首个预发布 | pending | P0 | COMM-SEC-001 |
 | ARCH-001 | 收敛产品解包入口 | pending-decision | P0 | 同步/异步主线决策 |
