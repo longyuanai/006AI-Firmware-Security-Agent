@@ -50,6 +50,28 @@ console = Console()
 CVE_SOURCES = ("nvd", "local", "mock")
 
 
+def _read_stdin_payload() -> str:
+    """Read adapter JSON as UTF-8, including Windows PowerShell BOM input.
+
+    Windows PowerShell can write UTF-8 bytes with a BOM to a redirected native
+    process while Python selects the active console code page for ``stdin``.
+    Reading the text wrapper first would then turn the BOM and non-ASCII path
+    into mojibake before JSON parsing.  Prefer the underlying byte stream and
+    decode the IntegrationGateway wire format explicitly.
+    """
+    byte_stream = getattr(sys.stdin, "buffer", None)
+    if byte_stream is None:
+        return sys.stdin.read().lstrip("\ufeff")
+    raw = byte_stream.read()
+    if isinstance(raw, str):
+        return raw.lstrip("\ufeff")
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        encoding = getattr(sys.stdin, "encoding", None) or "utf-8"
+        return raw.decode(encoding)
+
+
 @contextmanager
 def _lookup_provider(
     source: str,
@@ -315,7 +337,7 @@ def scan(
 
     raw_payload = input_path or ""
     if (json_output or sbom_path is not None) and input_path is None:
-        raw_payload = sys.stdin.read()
+        raw_payload = _read_stdin_payload()
     if sbom_path is not None:
         if not raw_payload:
             raise click.UsageError("Provide --input for SBOM export.")

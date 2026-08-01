@@ -357,6 +357,9 @@ $ poetry run python benchmarks/run.py --time-scan
 
 ## 10. 路线图
 
+商业化执行以 [`commercialization-plan.md`](commercialization-plan.md) 为准。首个发布目标是
+单租户、离线优先的 on-prem Beta；企业多租户、动态实验和规模化调度不进入首版。
+
 | 阶段 | 内容 |
 |------|------|
 | PoC | mock 固件 + mock CVE + 富化 |
@@ -364,8 +367,9 @@ $ poetry run python benchmarks/run.py --time-scan
 | **v0.1 S2** | 真实固件解包 + PRisk 公式 |
 | **v0.1 S3** | 报告图表 + Docker + CI |
 | **v0.5** | CycloneDX SBOM 输出 ✅ |
-| v0.7 (当前) | 本地 CVE 缓存 + VEX + 真实组件检测,278 passed |
-| **v1.0** | 厂商指纹(差分分析、评测基线已在 v0.7 完成) |
+| v0.7 (当前) | 本地 CVE 缓存 + CycloneDX 漏洞段 + 真实组件检测 |
+| commercial beta | CI/依赖全绿 + VEX triage + Registry + 可复现交付 + 独立真实评测 |
+| enterprise | 身份/RBAC/审计/租户隔离/作业队列 + 可选 FirmAE Lab Worker |
 
 ## 11. 接口契约
 
