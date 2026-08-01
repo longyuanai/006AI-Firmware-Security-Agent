@@ -18,7 +18,7 @@
 - [x] Scanner 的 Binwalk → Unblob → mock fail-open 链
 - [x] `capabilities --json` 工具发现命令
 - [x] CycloneDX evidence/properties 与原子写入
-- [ ] Docker static worker 与固定镜像 digest
+- [x] Docker static worker 与固定镜像 digest
 - [ ] OpenVEX/CycloneDX VEX triage
 - [x] 跨版本组件和漏洞 diff
 - [ ] 持久化固件 registry

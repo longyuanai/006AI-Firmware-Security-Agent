@@ -44,7 +44,7 @@
 | FUSION-002 | Unblob 后备解包 adapter | done | 2026-07-29 | Binwalk → Unblob → mock |
 | FUSION-003 | Syft + CVE Binary Tool inventory | done | 2026-07-29 | PURL/evidence/confidence 合并 |
 | FUSION-004 | CycloneDX evidence + 原子写入 | done | 2026-07-29 | 保持 1.5 输出兼容 |
-| FUSION-005 | Docker static worker | pending | — | 固定 digest、只读、无网络 |
+| FUSION-005 | Docker static worker | done | 2026-08-01 | 固定基础镜像 digest、只读、无网络、资源限制 |
 | FUSION-006 | VEX triage | pending | — | OpenVEX/CycloneDX VEX |
 | FUSION-007 | Registry + firmware diff | partial | — | diff 已完成；持久 registry 待实现 |
 | FUSION-008 | FirmAE/QEMU lab worker | pending | — | 显式 opt-in，不进默认 scan |
