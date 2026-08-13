@@ -1,0 +1,1 @@
+{"finding": {"severity": "high", "confidence": 0.94}, "business_impact": "Synthetic exploitation likelihood increases operational exposure.", "remediation_summary": "Accelerate the validated synthetic update window.", "rationale": "High synthetic EPSS supports urgent remediation."}
