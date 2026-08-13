@@ -17,9 +17,12 @@ from shared_llm_core import (
     LLMRouter,
 )
 from shared_llm_core.router import TaskTier
-
 from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.normalizer import Component
+from ai_firmware_agent.v05_compat import (
+    INJECTION_GUARD_SYSTEM_PROMPT,
+    wrap_untrusted,
+)
 
 
 @dataclass(frozen=True)
@@ -163,12 +166,23 @@ def enrich_top_components(
         }
         req = ChatRequest(
             messages=[
-                ChatMessage(role="system", content=_SYSTEM),
+                ChatMessage(
+                    role="system",
+                    content=f"{_SYSTEM}\n\n{INJECTION_GUARD_SYSTEM_PROMPT}",
+                ),
                 ChatMessage(
                     role="user",
                     content=_USER_TEMPLATE.format(
-                        component_json=json.dumps(blob["component"], indent=2),
-                        cves_json=json.dumps(blob["cves"], indent=2),
+                        component_json=wrap_untrusted(
+                            json.dumps(
+                                blob["component"], ensure_ascii=False, indent=2
+                            ),
+                            kind="firmware_component",
+                        ),
+                        cves_json=wrap_untrusted(
+                            json.dumps(blob["cves"], ensure_ascii=False, indent=2),
+                            kind="cve_record",
+                        ),
                     ),
                 ),
             ],
