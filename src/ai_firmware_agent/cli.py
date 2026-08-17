@@ -294,6 +294,11 @@ def capabilities(json_output: bool) -> None:
     help="Write a CycloneDX 1.5 JSON SBOM and skip LLM analysis.",
 )
 @click.option(
+    "--emba-report",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help="Import an existing EMBA F15 CycloneDX 1.5 JSON report.",
+)
+@click.option(
     "--cve-source",
     type=click.Choice(CVE_SOURCES),
     default="nvd",
@@ -323,6 +328,7 @@ def scan(
     output_path: str,
     json_output: bool,
     sbom_path: Path | None,
+    emba_report: Path | None,
     cve_source: str,
     output_format: str,
     top_n: int,
@@ -335,8 +341,17 @@ def scan(
     """Scan a .bin or manifest archive (or demo) and emit Markdown."""
     from shared_llm_core.router import LLMRouter
 
+    if emba_report is not None and (input_path is not None or demo or sbom_path is not None):
+        raise click.UsageError(
+            "--emba-report cannot be combined with --input, --demo, or --sbom."
+        )
+
     raw_payload = input_path or ""
-    if (json_output or sbom_path is not None) and input_path is None:
+    if (
+        (json_output or sbom_path is not None)
+        and input_path is None
+        and emba_report is None
+    ):
         raw_payload = _read_stdin_payload()
     if sbom_path is not None:
         if not raw_payload:
@@ -379,6 +394,17 @@ def scan(
             return
         input_path = raw_payload
 
+    if json_output and emba_report is not None:
+        from ai_firmware_agent.providers import import_emba_path_to_envelope
+
+        click.echo(
+            json.dumps(
+                import_emba_path_to_envelope(emba_report),
+                ensure_ascii=True,
+            )
+        )
+        return
+
     if json_output:
         raw_payload = input_path if input_path is not None else raw_payload
         envelope = scan_payload_to_envelope(raw_payload)
@@ -391,8 +417,10 @@ def scan(
         click.echo(json.dumps(envelope, ensure_ascii=True))
         return
 
-    if not demo and not input_path:
-        raise click.UsageError("Provide --input FILE or pass --demo.")
+    if not demo and not input_path and emba_report is None:
+        raise click.UsageError(
+            "Provide --input FILE, --emba-report FILE, or pass --demo."
+        )
     if input_path and not Path(input_path).is_file():
         raise click.BadParameter(
             f"Path does not exist: {input_path}",
@@ -401,7 +429,17 @@ def scan(
 
     os.environ.setdefault("LLM_PROVIDERS", provider)
 
-    if demo:
+    if emba_report is not None:
+        from ai_firmware_agent.providers import EmbaImportError, load_emba_report
+
+        console.print(f"[bold]Importing[/bold] existing EMBA report {emba_report} ...")
+        try:
+            imported = load_emba_report(emba_report)
+        except (EmbaImportError, OSError) as exc:
+            raise click.ClickException(f"{type(exc).__name__}: {exc}") from exc
+        parsed = list(imported.components)
+        source = "EMBA imported report"
+    elif demo:
         console.print("[bold]Building[/bold] synthetic demo firmware ...")
         from ai_firmware_agent.parsers import parse_firmware
         from io import BytesIO
