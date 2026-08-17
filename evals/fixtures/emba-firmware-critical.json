@@ -1,0 +1,1 @@
+{"finding": {"severity": "critical", "confidence": 0.97}, "business_impact": "Imported synthetic evidence requires immediate review.", "remediation_summary": "Apply the reviewed synthetic update after validation.", "rationale": "Critical imported synthetic impact drives the priority."}

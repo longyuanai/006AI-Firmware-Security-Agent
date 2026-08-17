@@ -1,0 +1,1 @@
+{"finding": {"severity": "critical", "confidence": 0.98}, "business_impact": "Imported synthetic active-exploitation evidence elevates device risk.", "remediation_summary": "Prioritize the reviewed containment and update sequence.", "rationale": "The imported synthetic KEV marker requires critical handling."}

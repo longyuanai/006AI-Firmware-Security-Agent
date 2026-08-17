@@ -1,0 +1,1 @@
+{"finding": {"severity": "medium", "confidence": 0.77}, "business_impact": "The imported synthetic issue has limited device impact.", "remediation_summary": "Schedule the reviewed synthetic maintenance update.", "rationale": "Moderate imported impact supports planned remediation."}

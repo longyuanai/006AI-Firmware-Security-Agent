@@ -1,0 +1,1 @@
+{"finding": {"severity": "high", "confidence": 0.90}, "business_impact": "The imported synthetic component exposes a high-impact function.", "remediation_summary": "Upgrade the synthetic component after validation.", "rationale": "High imported synthetic impact justifies priority."}

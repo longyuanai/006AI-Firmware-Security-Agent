@@ -1,0 +1,1 @@
+{"finding": {"severity": "medium", "confidence": 0.54}, "business_impact": "No synthetic CVE is associated with the imported component.", "remediation_summary": "Retain inventory monitoring and vendor review.", "rationale": "Limited imported evidence warrants a cautious medium baseline."}
