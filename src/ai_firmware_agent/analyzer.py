@@ -138,6 +138,17 @@ def _parse(match: ComponentMatch, resp: ChatResponse) -> ComponentNarrative:
     )
 
 
+def _component_evidence_kind(component: Component) -> str:
+    sources = component.extra.get("detection_sources", [])
+    if isinstance(sources, str):
+        source_names = {sources}
+    elif isinstance(sources, (list, tuple, set, frozenset)):
+        source_names = {str(source) for source in sources}
+    else:
+        source_names = set()
+    return "imported_report" if "emba" in source_names else "firmware_component"
+
+
 def enrich_top_components(
     matches: list[ComponentMatch],
     router: LLMRouter,
@@ -177,7 +188,7 @@ def enrich_top_components(
                             json.dumps(
                                 blob["component"], ensure_ascii=False, indent=2
                             ),
-                            kind="firmware_component",
+                            kind=_component_evidence_kind(m.component),
                         ),
                         cves_json=wrap_untrusted(
                             json.dumps(blob["cves"], ensure_ascii=False, indent=2),
