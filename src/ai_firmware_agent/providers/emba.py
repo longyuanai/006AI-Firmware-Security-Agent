@@ -239,6 +239,7 @@ def _finding(component: Component, cve: CveRecord, prisk: float) -> dict[str, An
         ),
         tags=frozenset({"firmware", "cve", "prisk"}),
         metadata={
+            "finding_origin": "emba_import",
             "component": component.name,
             "component_version": component.version,
             "cvss": cve.cvss,

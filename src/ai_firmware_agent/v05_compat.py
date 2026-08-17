@@ -180,6 +180,8 @@ def new_finding(
     metadata: Mapping[str, Any] | None = None,
 ) -> Any:
     """Construct a firmware Finding with a fresh UUID4."""
+    finding_metadata = dict(metadata or {})
+    finding_metadata.setdefault("finding_origin", "native_pipeline")
     return Finding(
         id=str(uuid4()),
         source=FindingSource.FIRMWARE,
@@ -192,7 +194,7 @@ def new_finding(
         evidence=evidence,
         related=related,
         tags=tags,
-        metadata=metadata or {},
+        metadata=finding_metadata,
     )
 
 
