@@ -32,6 +32,7 @@ ALLOWED_DIRECT_IMPORTS = {
     "v05_compat.py": {
         "shared_llm_core",
         "shared_llm_core.finding",
+        "shared_llm_core.telemetry",
         "shared_llm_core.untrusted",
     },
 }

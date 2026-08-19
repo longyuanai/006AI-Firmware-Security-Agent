@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 import shared_llm_core
+from shared_llm_core.telemetry import span as span
 from shared_llm_core.untrusted import (
     INJECTION_GUARD_SYSTEM_PROMPT as INJECTION_GUARD_SYSTEM_PROMPT,
     wrap_untrusted as wrap_untrusted,
