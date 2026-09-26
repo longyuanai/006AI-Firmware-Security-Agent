@@ -1,0 +1,1 @@
+{"finding": {"severity": "high", "confidence": 0.91}, "business_impact": "The synthetic component exposes a high-impact device function.", "remediation_summary": "Upgrade the synthetic component after validation.", "rationale": "High synthetic impact and reachability justify priority."}

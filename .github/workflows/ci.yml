@@ -65,6 +65,10 @@ jobs:
         working-directory: 006AI-Firmware-Security-Agent
         env:
           MPLCONFIGDIR: .mplconfig
+          # The gateway adapter runs `python -m shared_integration.adapters.worker`
+          # in a child process, which does not inherit the tests' sys.path
+          # insert; point it at the sibling checkout explicitly.
+          PYTHONPATH: ${{ github.workspace }}/000shared-integration/src
         run: poetry run pytest --basetemp=.pytest-tmp
 
       # A security scanner should not ship known-vulnerable dependencies of

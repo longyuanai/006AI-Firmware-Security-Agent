@@ -61,7 +61,7 @@ def test_orchestrator_receives_frozen_roles_and_mission_context():
         AgentRole.EXPLOITER,
         AgentRole.REVIEWER,
     )
-    assert mission.inputs["findings"][0]["id"] == source.id
+    assert source.id in mission.inputs["findings"][0]
     assert mission.metadata["mode"] == "authorized-defensive-simulation"
 
 

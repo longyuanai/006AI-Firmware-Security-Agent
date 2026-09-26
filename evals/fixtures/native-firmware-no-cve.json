@@ -1,0 +1,1 @@
+{"finding": {"severity": "medium", "confidence": 0.55}, "business_impact": "No synthetic CVE is associated with the identified component.", "remediation_summary": "Retain inventory monitoring and vendor review.", "rationale": "Limited evidence warrants a cautious medium baseline."}

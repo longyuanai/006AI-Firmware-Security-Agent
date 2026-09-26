@@ -21,7 +21,7 @@ from ai_firmware_agent.cve_db import CveRecord, mock_lookup
 from ai_firmware_agent.normalizer import Component
 from ai_firmware_agent.parsers import parse_firmware_file
 from ai_firmware_agent.unpack import FirmwareUnpackError, unpack_firmware
-from ai_firmware_agent.v05_compat import FindingSeverity, new_finding
+from ai_firmware_agent.v05_compat import FindingSeverity, new_finding, span
 
 MAX_FIRMWARE_BYTES = 10 * 1024 * 1024
 MAX_REDIRECTS = 5
@@ -394,6 +394,23 @@ def scan_payload_to_envelope(
     resolver: Resolver = _system_resolver,
 ) -> Mapping[str, Any]:
     """Materialize an adapter payload and return a JSON-ready envelope."""
+    with span(
+        "product.scan",
+        attributes={"product.id": "006", "scan.target_type": "firmware_image"},
+    ):
+        return _scan_payload_to_envelope(
+            raw_payload,
+            client=client,
+            resolver=resolver,
+        )
+
+
+def _scan_payload_to_envelope(
+    raw_payload: str,
+    *,
+    client: httpx.Client | None = None,
+    resolver: Resolver = _system_resolver,
+) -> Mapping[str, Any]:
     try:
         with materialize_firmware(
             raw_payload,

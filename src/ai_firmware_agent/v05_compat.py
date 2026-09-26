@@ -16,6 +16,11 @@ from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 import shared_llm_core
+from shared_llm_core.telemetry import span as span
+from shared_llm_core.untrusted import (
+    INJECTION_GUARD_SYSTEM_PROMPT as INJECTION_GUARD_SYSTEM_PROMPT,
+    wrap_untrusted as wrap_untrusted,
+)
 
 if TYPE_CHECKING:
     from shared_llm_core import (
@@ -176,6 +181,8 @@ def new_finding(
     metadata: Mapping[str, Any] | None = None,
 ) -> Any:
     """Construct a firmware Finding with a fresh UUID4."""
+    finding_metadata = dict(metadata or {})
+    finding_metadata.setdefault("finding_origin", "native_pipeline")
     return Finding(
         id=str(uuid4()),
         source=FindingSource.FIRMWARE,
@@ -188,7 +195,7 @@ def new_finding(
         evidence=evidence,
         related=related,
         tags=tags,
-        metadata=metadata or {},
+        metadata=finding_metadata,
     )
 
 

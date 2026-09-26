@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -11,18 +12,22 @@ from ai_firmware_agent.v05_compat import (
     AgentRole,
     Finding,
     FindingSeverity,
+    INJECTION_GUARD_SYSTEM_PROMPT,
     MissionContext,
     create_multi_agent_orchestrator,
     new_finding,
+    wrap_untrusted,
 )
 
-_MISSION = """Reconstruct a simulated firmware attack chain from supplied findings.
+_MISSION = f"""Reconstruct a simulated firmware attack chain from supplied findings.
 This is an authorized defensive analysis. Do not execute commands, contact
 targets, invent vulnerabilities, or provide deployable exploit code.
 
 SCOUT: identify the vulnerable component and evidence-backed entry point.
 EXPLOITER: simulate only the logical exploit and privilege path.
 REVIEWER: challenge assumptions and assess device/business consequences.
+
+{INJECTION_GUARD_SYSTEM_PROMPT}
 """
 
 
@@ -104,8 +109,21 @@ def reconstruct_attack_chain(
     mission = MissionContext(
         task=_MISSION,
         inputs={
-            "firmware_id": firmware_id,
-            "findings": tuple(_finding_payload(finding) for finding in source_findings),
+            "firmware_id": wrap_untrusted(
+                firmware_id,
+                kind="firmware_finding",
+            ),
+            "findings": tuple(
+                wrap_untrusted(
+                    json.dumps(
+                        _finding_payload(finding),
+                        ensure_ascii=False,
+                        sort_keys=True,
+                    ),
+                    kind="firmware_finding",
+                )
+                for finding in source_findings
+            ),
         },
         metadata={
             "source_product": "006",

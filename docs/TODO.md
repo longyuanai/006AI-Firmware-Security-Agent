@@ -1,6 +1,6 @@
 # 006 AI-Firmware-Security-Agent · v0.1 TODO
 
-> **项目状态**: v0.7 静态融合实施中（386 passed / 2 skipped，2026-07-29）
+> **项目状态**: v0.7 静态融合完成，commercial beta 准备中（390 passed / 2 skipped，2026-08-01）
 > **共享接口**: [v0.1-contract.md](../../000shared-llm-core/docs/v0.1-contract.md) (已冻结)
 > **派活模板**: [CODEX_INSTRUCTIONS.md](../../CODEX_INSTRUCTIONS.md)
 
@@ -48,6 +48,28 @@
 | FUSION-006 | VEX triage | pending | — | OpenVEX/CycloneDX VEX |
 | FUSION-007 | Registry + firmware diff | partial | — | diff 已完成；持久 registry 待实现 |
 | FUSION-008 | FirmAE/QEMU lab worker | pending | — | 显式 opt-in，不进默认 scan |
+
+---
+
+## Commercial Beta · 商业化门槛
+
+详细实施与发布门槛见 [`commercialization-plan.md`](commercialization-plan.md)。
+
+| ID | 任务 | 状态 | 优先级 | 阻塞点 |
+|----|------|------|--------|--------|
+| COMM-WIN-001 | PowerShell JSON stdin UTF-8/BOM 兼容 | done | P0 | 2026-08-01，原生 subprocess 回归覆盖中文路径 |
+| COMM-SEC-001 | 清除 Starlette 依赖审计失败 | blocked-upstream | P0 | shared-integration/FastAPI 版本约束 |
+| COMM-REL-001 | 统一版本、依赖锁定和首个预发布 | pending | P0 | COMM-SEC-001 |
+| ARCH-001 | 收敛产品解包入口 | pending-decision | P0 | 同步/异步主线决策 |
+| FUSION-006 | OpenVEX/CycloneDX VEX triage | pending | P1 | — |
+| FUSION-007 | 持久化固件 Registry | partial | P1 | diff 已完成 |
+| COMM-JOB-001 | 作业生命周期、超时、取消和幂等 | pending | P1 | Registry |
+| COMM-OBS-001 | 结构化运行状态与可观测性 | pending | P1 | Registry |
+| COMM-PKG-001 | 镜像、SBOM、许可证和回滚交付包 | pending | P1 | 版本与依赖门槛 |
+| COMM-EVAL-001 | 5+ 独立真实固件语料评测 | pending | P1 | 合法样本与人工标注 |
+| COMM-CVE-001 | CVE 召回率基线 | pending | P1 | 固定日期漏洞快照 |
+| COMM-RISK-001 | PRisk 人工排序校准 | pending | P2 | 安全人员标注 |
+| COMM-PERF-001 | 端到端性能和容量基线 | pending | P2 | Linux 真实工具 Worker |
 
 ---
 
