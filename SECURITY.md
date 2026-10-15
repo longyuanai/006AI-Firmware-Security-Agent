@@ -1,26 +1,26 @@
-# 006AI-Firmware-Security-Agent · 安全边界
+# 006AI-Firmware-Security-Agent · SECURITY
 
-> 2026-10-12 根据本地目录、已有文档和构建清单建立的工程文档入口；本轮未运行项目业务验收或完整安全审计。
+核实日期：2026-10-15。依据本地README、构建清单和实际入口；本文件不把文档计划当成运行时验收。
 
-- Project ID：`006AI-Firmware-Security-Agent`
-- GitHub：[longyuanai/006AI-Firmware-Security-Agent](https://github.com/longyuanai/006AI-Firmware-Security-Agent)
-- Obsidian：Vault `龙渊` 内的 `03_Projects/AI-Network-Security/006AI-Firmware-Security-Agent - Git关联.md`（记录原理、实验、漏洞分析与复盘）。
+## 目标与范围
 
-## 适用边界
+在授权边界内分析固件，静态分析与受限模拟/工作进程能力分别验收。
 
-- 仅处理自有、授权、靶场或 CTF 的资产/样本。
-- 不将 API Key、Token、密码、私钥、个人资料或客户数据提交至代码库、报告或公开 Issue。
-- 文档补齐不等于产品通过安全验收；支持版本与安全报告渠道由维护者确认。
+GitHub：[longyuanai/006AI-Firmware-Security-Agent](https://github.com/longyuanai/006AI-Firmware-Security-Agent)。知识笔记：Vault内 `03_Projects/AI-Network-Security/006AI-Firmware-Security-Agent - Git关联.md`。
 
-## 漏洞记录与处理
+## 本项目安全边界
 
-在 Obsidian 对应项目的“漏洞分析”记录授权、根因、影响、修复与回归证据；公开材料只使用脱敏样本。
+验证未授权、异常退出、超时和不支持样本的处理；不执行未知样本或实体烧录。
 
-发现涉及凭据或个人数据的问题，使用维护者的私下渠道沟通；不在公开 Issue 附带敏感原件。当前未指定可用的专用邮箱。
+- 仅处理自有、授权、靶场或CTF资产；未知上传内容按数据处理，不作为脚本执行。
+- API Key、Token、主密码、私钥、个人资料、客户数据与运行数据库不进入Git、公开Issue或知识备份。
+- 真实外部模型、支付、生产数据库、Telegram/飞书操作与硬件烧录需各自明确授权；默认使用本地夹具。
 
-## 操作纪律
+## 报告与修复
 
-删除、覆盖、迁移、发布和烧录前检查备份与回滚。已批准的权限、路径、监听地址和数据出站限制以本项目 AGENTS 与现行安全规范为准。
+维护者账号：[longyuanai](https://github.com/longyuanai)。敏感问题先使用仓库已启用的私下报告渠道；未确认渠道时，不把敏感原件写入公开Issue。没有编造支持版本或联系邮箱。
+
+记录授权范围、根因、影响、脱敏复现、修复与回归证据；修改前保存可恢复版本。文档完善不等于产品通过全面安全审计。
 
 ## 现行依据
 

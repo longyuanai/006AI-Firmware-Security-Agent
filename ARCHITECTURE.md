@@ -1,42 +1,46 @@
-# 006AI-Firmware-Security-Agent · 架构导览
+# 006AI-Firmware-Security-Agent · ARCHITECTURE
 
-> 2026-10-12 根据本地目录、已有文档和构建清单建立的工程文档入口；本轮未运行项目业务验收或完整安全审计。
+核实日期：2026-10-15。依据本地README、构建清单和实际入口；本文件不把文档计划当成运行时验收。
 
-- Project ID：`006AI-Firmware-Security-Agent`
-- GitHub：[longyuanai/006AI-Firmware-Security-Agent](https://github.com/longyuanai/006AI-Firmware-Security-Agent)
-- Obsidian：Vault `龙渊` 内的 `03_Projects/AI-Network-Security/006AI-Firmware-Security-Agent - Git关联.md`（记录原理、实验、漏洞分析与复盘）。
+## 目标与范围
 
-## 已核实的工程入口
+在授权边界内分析固件，静态分析与受限模拟/工作进程能力分别验收。
 
-```text
-006AI-Firmware-Security-Agent/
-├── AUDIT/
-├── benchmarks/
-├── CAPABILITIES.md
-├── docker-compose.yml
-├── Dockerfile
-├── Dockerfile.emulator
-├── docs/
-├── evals/
-├── LICENSE
-├── modules/
-├── PHASE-2.md
-├── pyproject.toml
-├── samples/
-├── src/
-├── tests/
+GitHub：[longyuanai/006AI-Firmware-Security-Agent](https://github.com/longyuanai/006AI-Firmware-Security-Agent)。知识笔记：Vault内 `03_Projects/AI-Network-Security/006AI-Firmware-Security-Agent - Git关联.md`。
+
+## 组件与代码入口
+
+| 实际路径 | 责任边界 |
+| --- | --- |
+| [src](src) | 主要实现 |
+| [modules](modules) | 独立能力Git仓 |
+| [tests](tests) | 测试 |
+| [docs](docs) | 工程规范与说明 |
+
+## 数据与控制流
+
+以下链路对应README/规范描述；实现覆盖以代码入口和适用验证为准。
+
+```mermaid
+flowchart LR
+    N0["授权样本"]
+    N1["格式与能力选择"]
+    N2["静态分析或受限工作进程"]
+    N3["发现"]
+    N4["报告"]
+    N0 --> N1
+    N1 --> N2
+    N2 --> N3
+    N3 --> N4
 ```
 
-## 构建与技术栈依据
+## 构建与依赖依据
 
-- [pyproject.toml](pyproject.toml)：[tool.poetry]；name = "ai-firmware-agent"；[tool.poetry.dependencies]；python = "^3.11"；[tool.poetry.group.dev.dependencies]；[tool.poetry.scripts]；[build-system]；[tool.pytest.ini_options]。
+- [pyproject.toml](pyproject.toml)：`Python`。
 
-能力模块保留独立 Git 历史，提交/克隆须分别核对；目录编号与 API 来源编号不可混用，详见 CAPABILITIES。
+## 验证边界
 
-## 边界与待补充
-
-- 组件职责、数据流、数据模型与部署边界以现行技术规范为准。
-- [ ] 在真实代码反馈后补充仍缺少的数据流或设计取舍；当前不把拟议能力标为已实现。
+验证未授权、异常退出、超时和不支持样本的处理；不执行未知样本或实体烧录。
 
 ## 现行依据
 
